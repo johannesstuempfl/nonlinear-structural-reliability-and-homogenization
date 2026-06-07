@@ -59,10 +59,10 @@ class Solver2ndOrder:
 
             # Konvergenzprüfung
             delta = np.linalg.norm(u - u_alt)
-            print(f"  Iteration {iteration+1:2d}: ||Δu|| = {delta:.2e}")
+            #print(f"  Iteration {iteration+1:2d}: ||Δu|| = {delta:.2e}")
             
             if delta < self.tol:
-                print(f"  Konvergiert nach {iteration+1} Iterationen.")
+                #print(f"  Konvergiert nach {iteration+1} Iterationen.")
                 return results
 
         raise RuntimeError(

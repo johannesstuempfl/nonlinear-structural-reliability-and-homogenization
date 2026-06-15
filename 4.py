@@ -42,9 +42,6 @@ h = 3.9
 # v = 11140.597101578878
 # h = 8912.477681263103
 
-v = 45
-h = 2.0
-
 s = Structure()
 # Stab 1 
 n1 = s.add_node(x=delta_x_1 * 0/15,z=delta_z_1 * 0/15, kind="frame", support={"u": True, "w": True, "phi": False})

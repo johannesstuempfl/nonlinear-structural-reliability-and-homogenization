@@ -55,6 +55,7 @@ I = 0.2736705e-5 # m4
 h = 0.12  # m
 z = h/2  # m
 sigma_yield = 35.5 # kN/cm2 
+alpha = 1.14
 M_yield = I/z * sigma_yield * 100e2 * 1.14 # kNm
 
 # approximately resembles an IPE 100

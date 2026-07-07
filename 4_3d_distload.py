@@ -4,15 +4,15 @@ from solver_2nd import Solver2ndOrder
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from eurocode_formulas import M_c_Rd
 
-# approximately resembles an IPE 120
+# NEW modified IPE 120 -> eta = 100% for Th.I.O.
 E = 210e6 # kN/m2 
 A = 1.321e-3 # m2
-I = 0.318e-5 # m4
+I = 0.2736705e-5 # m4
 h = 0.12  # m
 z = h/2  # m
 sigma_yield = 35.5 # kN/cm2 
+alpha = 1.14
 M_yield = I/z * sigma_yield * 100e2 * 1.14 # kNm
 
 

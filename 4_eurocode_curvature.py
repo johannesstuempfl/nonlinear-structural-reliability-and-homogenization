@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # NEW modified IPE 120 -> eta = 100% for Th.I.O.
 E = 210e6 # kN/m2 
 A = 1.321e-3 # m2
-I = 0.2736705e-5 # m4
+I = 0.2740555e-5 # m4
 h = 0.12  # m
 z = h/2  # m
 sigma_yield = 35.5 # kN/cm2 
@@ -178,10 +178,10 @@ def t_S(l_1, l_2):
 
 
     solver1 = Solver1stOrder()
-    solver2 = Solver2ndOrder(tol=1e-6, max_iter=50)
+    #solver2 = Solver2ndOrder(tol=1e-6, max_iter=50)
 
     res1 = solver1.solve(s)
-    res2 = solver2.solve(s)
+    #res2 = solver2.solve(s)
 
     #res1.print_summary()
     #res2.print_summary()

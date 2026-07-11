@@ -4,7 +4,7 @@ A = 3e-3 # m2
 I = 1.94e-5 # m4
 h = 0.2  # m
 z = h/2  # m
-sigma_yield = 46.0 # kN/cm2 
+sigma_yield = 35.5 # kN/cm2 
 alpha = 1.14
 M_yield = I/z * sigma_yield * 100e2 * alpha # kNm
 
@@ -14,7 +14,7 @@ A = 2.0e-3 # m2
 I = 0.869e-5 # m4
 h = 0.16  # m
 z = h/2  # m
-sigma_yield = 46.0 # kN/cm2 
+sigma_yield = 35.5 # kN/cm2 
 alpha = 1.14
 M_yield = I/z * sigma_yield * 100e2 * alpha # kNm
 
@@ -24,7 +24,7 @@ A = 1.6e-3 # m2
 I = 0.54e-5 # m4
 h = 0.14  # m
 z = h/2  # m
-sigma_yield = 46.0 # kN/cm2 
+sigma_yield = 35.5 # kN/cm2 
 alpha = 1.14
 M_yield = I/z * sigma_yield * 100e2 * alpha # kNm
 
@@ -74,6 +74,6 @@ A = 1.032e-3 # m2
 I = 0.157e-5 # m4
 h = 0.10  # m
 z = h/2  # m
-sigma_yield = 42.0 # kN/cm2 
+sigma_yield = 35.5 # kN/cm2 
 alpha = 1.15
 M_yield = I/z * sigma_yield * 100e2 * alpha # kNm

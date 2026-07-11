@@ -3,7 +3,6 @@ from solver_1st import Solver1stOrder
 from solver_2nd import Solver2ndOrder
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 
 # NEW modified IPE 120 -> eta = 100% for Th.I.O.
 E = 210e6 # kN/m2 

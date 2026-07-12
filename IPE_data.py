@@ -28,15 +28,6 @@ sigma_yield = 35.5 # kN/cm2
 alpha = 1.14
 M_yield = I/z * sigma_yield * 100e2 * alpha # kNm
 
-# approximately resembles an IPE 120
-E = 210e6 # kN/m2 
-A = 1.321e-3 # m2
-I = 0.318e-5 # m4
-h = 0.12  # m
-z = h/2  # m
-sigma_yield = 35.5 # kN/cm2 
-alpha = 1.14
-M_yield = I/z * sigma_yield * 100e2 * alpha # kNm
 
 # modified IPE 120 -> eta Option 1 = 100% for Th.II.O. (Design Option 1)
 E = 210e6 # kN/m2 

@@ -22,11 +22,11 @@ z_1 = 0.0
 
 # Node 2
 x_2 = 0.0
-z_2 = -3.0
+z_2 = -2.0
 
 # Node 3
 x_3 = 3.0
-z_3 = -3.0
+z_3 = -2.5
 
 # Node 4
 x_4 = 6.0
@@ -58,11 +58,11 @@ M_Th1_list = []
 M_Th2_list = []
 
 # Range für Linienlasten über beide Elemente
-V_range = np.linspace(0, 15, 20)
+V_range = np.linspace(0, 8, 20)
 H_range = np.linspace(0, 10, 20)
 
-#v = 10
-h = 5
+#v = 5
+h = 4
 
 # TH1 LOOP
 #for h in H_range:
@@ -199,17 +199,41 @@ for v in V_range:
     s.add_dist_load(e29, qz=v, local=True)
     s.add_dist_load(e30, qz=v, local=True)
     
-    # # Horizontal Load on Beam 4
-    # s.add_dist_load(e31, qz=-h, local=True)
-    # s.add_dist_load(e32, qz=-h, local=True)
-    # s.add_dist_load(e33, qz=-h, local=True)
-    # s.add_dist_load(e34, qz=-h, local=True)
-    # s.add_dist_load(e35, qz=-h, local=True)
-    # s.add_dist_load(e36, qz=-h, local=True)
-    # s.add_dist_load(e37, qz=-h, local=True)
-    # s.add_dist_load(e38, qz=-h, local=True)
-    # s.add_dist_load(e39, qz=-h, local=True)
-    # s.add_dist_load(e40, qz=-h, local=True)
+    # Vertical Load on Beam 2
+    s.add_dist_load(e11, qz=v, local=False)
+    s.add_dist_load(e12, qz=v, local=False)
+    s.add_dist_load(e13, qz=v, local=False)
+    s.add_dist_load(e14, qz=v, local=False)
+    s.add_dist_load(e15, qz=v, local=False)
+    s.add_dist_load(e16, qz=v, local=False)
+    s.add_dist_load(e17, qz=v, local=False)
+    s.add_dist_load(e18, qz=v, local=False)
+    s.add_dist_load(e19, qz=v, local=False)
+    s.add_dist_load(e20, qz=v, local=False)
+
+    # Vertical Load on Beam 3
+    s.add_dist_load(e21, qz=v, local=False)
+    s.add_dist_load(e22, qz=v, local=False)
+    s.add_dist_load(e23, qz=v, local=False)
+    s.add_dist_load(e24, qz=v, local=False)
+    s.add_dist_load(e25, qz=v, local=False)
+    s.add_dist_load(e26, qz=v, local=False)
+    s.add_dist_load(e27, qz=v, local=False)
+    s.add_dist_load(e28, qz=v, local=False)
+    s.add_dist_load(e29, qz=v, local=False)
+    s.add_dist_load(e30, qz=v, local=False)
+    
+    # Horizontal Load on Beam 4
+    s.add_dist_load(e31, qz=-h, local=True)
+    s.add_dist_load(e32, qz=-h, local=True)
+    s.add_dist_load(e33, qz=-h, local=True)
+    s.add_dist_load(e34, qz=-h, local=True)
+    s.add_dist_load(e35, qz=-h, local=True)
+    s.add_dist_load(e36, qz=-h, local=True)
+    s.add_dist_load(e37, qz=-h, local=True)
+    s.add_dist_load(e38, qz=-h, local=True)
+    s.add_dist_load(e39, qz=-h, local=True)
+    s.add_dist_load(e40, qz=-h, local=True)
 
     
     solver1 = Solver1stOrder()
@@ -340,41 +364,65 @@ for v in V_range:
     s.add_dist_load(e10, qz=h, local=True)
 
 
+    # # Vertical Load on Beam 2
+    # s.add_dist_load(e11, qz=v, local=True)
+    # s.add_dist_load(e12, qz=v, local=True)
+    # s.add_dist_load(e13, qz=v, local=True)
+    # s.add_dist_load(e14, qz=v, local=True)
+    # s.add_dist_load(e15, qz=v, local=True)
+    # s.add_dist_load(e16, qz=v, local=True)
+    # s.add_dist_load(e17, qz=v, local=True)
+    # s.add_dist_load(e18, qz=v, local=True)
+    # s.add_dist_load(e19, qz=v, local=True)
+    # s.add_dist_load(e20, qz=v, local=True)
+
+    # # Vertical Load on Beam 3
+    # s.add_dist_load(e21, qz=v, local=True)
+    # s.add_dist_load(e22, qz=v, local=True)
+    # s.add_dist_load(e23, qz=v, local=True)
+    # s.add_dist_load(e24, qz=v, local=True)
+    # s.add_dist_load(e25, qz=v, local=True)
+    # s.add_dist_load(e26, qz=v, local=True)
+    # s.add_dist_load(e27, qz=v, local=True)
+    # s.add_dist_load(e28, qz=v, local=True)
+    # s.add_dist_load(e29, qz=v, local=True)
+    # s.add_dist_load(e30, qz=v, local=True)
+    
     # Vertical Load on Beam 2
-    s.add_dist_load(e11, qz=v, local=True)
-    s.add_dist_load(e12, qz=v, local=True)
-    s.add_dist_load(e13, qz=v, local=True)
-    s.add_dist_load(e14, qz=v, local=True)
-    s.add_dist_load(e15, qz=v, local=True)
-    s.add_dist_load(e16, qz=v, local=True)
-    s.add_dist_load(e17, qz=v, local=True)
-    s.add_dist_load(e18, qz=v, local=True)
-    s.add_dist_load(e19, qz=v, local=True)
-    s.add_dist_load(e20, qz=v, local=True)
+    s.add_dist_load(e11, qz=v, local=False)
+    s.add_dist_load(e12, qz=v, local=False)
+    s.add_dist_load(e13, qz=v, local=False)
+    s.add_dist_load(e14, qz=v, local=False)
+    s.add_dist_load(e15, qz=v, local=False)
+    s.add_dist_load(e16, qz=v, local=False)
+    s.add_dist_load(e17, qz=v, local=False)
+    s.add_dist_load(e18, qz=v, local=False)
+    s.add_dist_load(e19, qz=v, local=False)
+    s.add_dist_load(e20, qz=v, local=False)
 
     # Vertical Load on Beam 3
-    s.add_dist_load(e21, qz=v, local=True)
-    s.add_dist_load(e22, qz=v, local=True)
-    s.add_dist_load(e23, qz=v, local=True)
-    s.add_dist_load(e24, qz=v, local=True)
-    s.add_dist_load(e25, qz=v, local=True)
-    s.add_dist_load(e26, qz=v, local=True)
-    s.add_dist_load(e27, qz=v, local=True)
-    s.add_dist_load(e28, qz=v, local=True)
-    s.add_dist_load(e29, qz=v, local=True)
-    s.add_dist_load(e30, qz=v, local=True)
+    s.add_dist_load(e21, qz=v, local=False)
+    s.add_dist_load(e22, qz=v, local=False)
+    s.add_dist_load(e23, qz=v, local=False)
+    s.add_dist_load(e24, qz=v, local=False)
+    s.add_dist_load(e25, qz=v, local=False)
+    s.add_dist_load(e26, qz=v, local=False)
+    s.add_dist_load(e27, qz=v, local=False)
+    s.add_dist_load(e28, qz=v, local=False)
+    s.add_dist_load(e29, qz=v, local=False)
+    s.add_dist_load(e30, qz=v, local=False)
 
-    # # Horizontal Load on Beam 4
-    # s.add_dist_load(e31, qz=-h, local=True)
-    # s.add_dist_load(e32, qz=-h, local=True)
-    # s.add_dist_load(e33, qz=-h, local=True)
-    # s.add_dist_load(e34, qz=-h, local=True)
-    # s.add_dist_load(e35, qz=-h, local=True)
-    # s.add_dist_load(e36, qz=-h, local=True)
-    # s.add_dist_load(e37, qz=-h, local=True)
-    # s.add_dist_load(e38, qz=-h, local=True)
-    # s.add_dist_load(e39, qz=-h, local=True)
-    # s.add_dist_load(e40, qz=-h, local=True)
+    # Horizontal Load on Beam 4
+    s.add_dist_load(e31, qz=-h, local=True)
+    s.add_dist_load(e32, qz=-h, local=True)
+    s.add_dist_load(e33, qz=-h, local=True)
+    s.add_dist_load(e34, qz=-h, local=True)
+    s.add_dist_load(e35, qz=-h, local=True)
+    s.add_dist_load(e36, qz=-h, local=True)
+    s.add_dist_load(e37, qz=-h, local=True)
+    s.add_dist_load(e38, qz=-h, local=True)
+    s.add_dist_load(e39, qz=-h, local=True)
+    s.add_dist_load(e40, qz=-h, local=True)
     
     # solver1 = Solver1stOrder()
     solver2 = Solver2ndOrder(tol=1e-6, max_iter=60)

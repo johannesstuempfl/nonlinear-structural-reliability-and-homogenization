@@ -21,8 +21,8 @@ x_1 = 0.0
 z_1 = 0.0
 
 # Node 2
-x_2 = 3.0
-z_2 = 0.0
+x_2 = 0.0
+z_2 = -3.0
 
 
 # Outer dimensions for beam 1
@@ -42,8 +42,8 @@ v = 300
 h = 5
 
 # TH1 LOOP
-for h in H_range:
-#for v in V_range:
+#for h in H_range:
+for v in V_range:
     s = Structure()
     # Stab 1 
     n1 = s.add_node(x=delta_x_1 * 0/elements_per_beam,z=delta_z_1 * 0/elements_per_beam, kind="frame", support={"u": True, "w": True, "phi": True})
@@ -69,20 +69,23 @@ for h in H_range:
     e9 = s.add_element(node_i=n9,node_j=n10, E=E, A=A, I=I)
     e10 = s.add_element(node_i=n10,node_j=n11, E=E, A=A, I=I)
 
-    # Horizontal Load on Beam 1
-    s.add_dist_load(e1, qz=h, local=True)
-    s.add_dist_load(e2, qz=h, local=True)
-    s.add_dist_load(e3, qz=h, local=True)
-    s.add_dist_load(e4, qz=h, local=True)
-    s.add_dist_load(e5, qz=h, local=True)
-    s.add_dist_load(e6, qz=h, local=True)
-    s.add_dist_load(e7, qz=h, local=True)
-    s.add_dist_load(e8, qz=h, local=True)
-    s.add_dist_load(e9, qz=h, local=True)
-    s.add_dist_load(e10, qz=h, local=True)
+    # # Horizontal Load on Beam 1
+    # s.add_dist_load(e1, qz=h, local=True)
+    # s.add_dist_load(e2, qz=h, local=True)
+    # s.add_dist_load(e3, qz=h, local=True)
+    # s.add_dist_load(e4, qz=h, local=True)
+    # s.add_dist_load(e5, qz=h, local=True)
+    # s.add_dist_load(e6, qz=h, local=True)
+    # s.add_dist_load(e7, qz=h, local=True)
+    # s.add_dist_load(e8, qz=h, local=True)
+    # s.add_dist_load(e9, qz=h, local=True)
+    # s.add_dist_load(e10, qz=h, local=True)
     
-    # Point Load on Beam 2
-    s.add_node_load(node=n11, Fx=-v)
+    # Point Load on Top
+    s.add_node_load(node=n11, Fz=v)
+    
+    # Point Load on Top
+    s.add_node_load(node=n11, Fx=h)
 
     
     solver1 = Solver1stOrder()
@@ -103,8 +106,8 @@ for h in H_range:
     # M_Th2_list.append(M_j_Th2)
 
 # TH2 LOOP
-for h in H_range:
-#for v in V_range:
+#for h in H_range:
+for v in V_range:
     s = Structure()
     # Stab 1 
     n1 = s.add_node(x=delta_x_1 * 0/elements_per_beam,z=delta_z_1 * 0/elements_per_beam, kind="frame", support={"u": True, "w": True, "phi": True})
@@ -130,20 +133,24 @@ for h in H_range:
     e9 = s.add_element(node_i=n9,node_j=n10, E=E, A=A, I=I)
     e10 = s.add_element(node_i=n10,node_j=n11, E=E, A=A, I=I)
 
-    # Horizontal Load on Beam 1
-    s.add_dist_load(e1, qz=h, local=True)
-    s.add_dist_load(e2, qz=h, local=True)
-    s.add_dist_load(e3, qz=h, local=True)
-    s.add_dist_load(e4, qz=h, local=True)
-    s.add_dist_load(e5, qz=h, local=True)
-    s.add_dist_load(e6, qz=h, local=True)
-    s.add_dist_load(e7, qz=h, local=True)
-    s.add_dist_load(e8, qz=h, local=True)
-    s.add_dist_load(e9, qz=h, local=True)
-    s.add_dist_load(e10, qz=h, local=True)
+    # # Horizontal Load on Beam 1
+    # s.add_dist_load(e1, qz=h, local=True)
+    # s.add_dist_load(e2, qz=h, local=True)
+    # s.add_dist_load(e3, qz=h, local=True)
+    # s.add_dist_load(e4, qz=h, local=True)
+    # s.add_dist_load(e5, qz=h, local=True)
+    # s.add_dist_load(e6, qz=h, local=True)
+    # s.add_dist_load(e7, qz=h, local=True)
+    # s.add_dist_load(e8, qz=h, local=True)
+    # s.add_dist_load(e9, qz=h, local=True)
+    # s.add_dist_load(e10, qz=h, local=True)
     
-    # Point Load on Beam 2
-    s.add_node_load(node=n11, Fx=-v)
+    # Point Load on Top
+    s.add_node_load(node=n11, Fz=v)
+    
+    # Point Load on Top
+    s.add_node_load(node=n11, Fx=h)
+    #s.add_node_load(node=n11, M=h)
     
     # solver1 = Solver1stOrder()
     solver2 = Solver2ndOrder(tol=1e-6, max_iter=60)
@@ -200,7 +207,7 @@ def plot_V_range():
 
     # Überschrift mit dem Wert von H hinzufügen
     #plt.title(f"H = {H} kN", fontsize=14, )
-    plt.title(f"h = {h} kN/m", fontsize=14, )
+    plt.title(f"H = {h} kN", fontsize=14, )
 
     # Grid anzeigen
     plt.grid(True, linestyle=':', alpha=0.6) # 'linestyle' macht es punktiert, 'alpha' macht es blasser
@@ -252,7 +259,7 @@ def plot_H_range():
 
     # Achsenbeschriftungen
     #plt.xlabel('H in [kN]', fontsize=12)
-    plt.xlabel('h in [kN/m]', fontsize=12)
+    plt.xlabel('H in [kN]', fontsize=12)
     plt.ylabel('M in [kNm]', fontsize=12)
 
     # Überschrift mit dem Wert von H hinzufügen
@@ -277,5 +284,5 @@ def plot_H_range():
     plt.show()
 
 
-#plot_V_range()
-plot_H_range()
+plot_V_range()
+#plot_H_range()

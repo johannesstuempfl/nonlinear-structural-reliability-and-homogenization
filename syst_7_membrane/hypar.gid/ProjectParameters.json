@@ -1,0 +1,115 @@
+{
+    "problem_data"     : {
+        "problem_name"  : "hypar",
+        "parallel_type" : "OpenMP",
+        "echo_level"    : 1,
+        "start_time"    : 0.0,
+        "end_time"      : 1.0
+    },
+    "solver_settings"  : {
+        "solver_type"                     : "formfinding",
+        "model_part_name"                 : "Structure",
+        "domain_size"                     : 3,
+        "echo_level"                      : 1,
+        "analysis_type"                   : "non_linear",
+        "model_import_settings"           : {
+            "input_type"     : "mdpa",
+            "input_filename" : "hypar"
+        },
+        "material_import_settings"        : {
+            "materials_filename" : "StructuralMaterials.json"
+        },
+        "time_stepping"                   : {
+            "time_step" : 0.1
+        },
+        "line_search"                     : false,
+        "convergence_criterion"           : "residual_criterion",
+        "displacement_relative_tolerance" : 1e-3,
+        "displacement_absolute_tolerance" : 1e-6,
+        "residual_relative_tolerance"     : 1e-3,
+        "residual_absolute_tolerance"     : 1.0,
+        "max_iteration"                   : 50,
+        "rotation_dofs"                   : false,
+        "volumetric_strain_dofs"          : false,
+        "projection_settings"             : {
+            "model_part_name"  : "Structure.Parts_Membrane_Membrane_Auto1",
+            "echo_level"       : 0,
+            "projection_type"  : "planar",
+            "global_direction" : [1,0,0],
+            "variable_name"    : "LOCAL_AXIS_1",
+            "visualize_in_vtk" : false,
+            "method_specific_settings" : {},
+            "check_local_space_dimension" : false
+        }
+    },
+    "processes"        : {
+        "constraints_process_list" : [{
+            "python_module" : "assign_vector_variable_process",
+            "kratos_module" : "KratosMultiphysics",
+            "process_name"  : "AssignVectorVariableProcess",
+            "Parameters"    : {
+                "model_part_name" : "Structure.DISPLACEMENT_Displacement_Auto1",
+                "variable_name"   : "DISPLACEMENT",
+                "interval"        : [0.0,"End"],
+                "constrained"     : [true,true,true],
+                "value"           : [0.0,0.0,0.0]
+            }
+        }],
+        "loads_process_list"       : [],
+        "list_other_processes"     : []
+    },
+    "output_processes" : {
+        "gid_output" : [{
+            "python_module" : "gid_output_process",
+            "kratos_module" : "KratosMultiphysics",
+            "process_name"  : "GiDOutputProcess",
+            "help"          : "This process writes postprocessing files for GiD",
+            "Parameters"    : {
+                "model_part_name"        : "Structure",
+                "output_name"            : "hypar",
+                "postprocess_parameters" : {
+                    "result_file_configuration" : {
+                        "gidpost_flags"               : {
+                            "GiDPostMode"           : "GiD_PostBinary",
+                            "WriteDeformedMeshFlag" : "WriteDeformed",
+                            "WriteConditionsFlag"   : "WriteConditions",
+                            "MultiFileFlag"         : "SingleFile"
+                        },
+                        "file_label"                  : "step",
+                        "output_control_type"         : "step",
+                        "output_interval"             : 1,
+                        "body_output"                 : true,
+                        "node_output"                 : false,
+                        "skin_output"                 : false,
+                        "plane_output"                : [],
+                        "nodal_results"               : ["DISPLACEMENT","REACTION"],
+                        "gauss_point_results"         : ["PK2_STRESS_VECTOR"],
+                        "nodal_nonhistorical_results" : []
+                    },
+                    "point_data_configuration"  : []
+                }
+            }
+        }],
+        "vtk_output" : [{
+            "python_module" : "vtk_output_process",
+            "kratos_module" : "KratosMultiphysics",
+            "process_name"  : "VtkOutputProcess",
+            "help"          : "This process writes postprocessing files for Paraview",
+            "Parameters"    : {
+                "model_part_name"                             : "Structure",
+                "output_control_type"                         : "step",
+                "output_interval"                             : 1,
+                "file_format"                                 : "ascii",
+                "output_precision"                            : 7,
+                "output_sub_model_parts"                      : false,
+                "folder_name"                                 : "vtk_output",
+                "save_output_files_in_folder"                 : true,
+                "nodal_solution_step_data_variables"          : ["DISPLACEMENT","REACTION"],
+                "nodal_data_value_variables"                  : [],
+                "element_data_value_variables"                : [],
+                "condition_data_value_variables"              : [],
+                "gauss_point_variables_extrapolated_to_nodes" : []
+            }
+        }]
+    }
+}

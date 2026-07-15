@@ -22,7 +22,7 @@ x_1 = 0.0
 z_1 = 0.0
 
 # Node 2
-x_2 = 0.0
+x_2 = 0.015
 z_2 = -3.0
 
 
@@ -31,9 +31,6 @@ delta_x_1 = x_2 - x_1
 delta_z_1 = z_2 - z_1
 
 elements_per_beam = 10
-
-M_Th1_list = []
-M_Th2_list = []
 
 v = 300
 h = 5
@@ -80,20 +77,19 @@ s.add_node_load(node=n11, Fz=v)
 
 # Point Load on Top
 s.add_node_load(node=n11, Fx=h)
-#s.add_node_load(node=n11, M=h)
 
 
 
-solver1 = Solver1stOrder()
-#solver2 = Solver2ndOrder(tol=1e-6, max_iter=50)
+#solver1 = Solver1stOrder()
+solver2 = Solver2ndOrder(tol=1e-6, max_iter=50)
 
-res1 = solver1.solve(s)
-#res2 = solver2.solve(s)
+#res1 = solver1.solve(s)
+res2 = solver2.solve(s)
 
-res1.print_summary()
-#res2.print_summary()
+#res1.print_summary()
+res2.print_summary()
 
-M_max = res1.internal_forces(s.elements[0])["M_i"]
+M_max = res2.internal_forces(s.elements[0])["M_i"]
 print(M_max)
 
 # # Stabilitätsanalyse

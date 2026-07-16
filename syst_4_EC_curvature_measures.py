@@ -4,6 +4,7 @@ from solver_2nd import Solver2ndOrder
 from buckling_analysis import BucklingAnalysis
 import numpy as np
 import matplotlib.pyplot as plt
+from measures_of_nonlinearity import kappa_1, kappa_2, kappa_12, r1, r2
 
 
 # NEW modified IPE 120 -> eta = 100% for Th.I.O.
@@ -190,38 +191,11 @@ def t_S(l_1, l_2):
 
     return M_max
 
-
-def kappa_1(l_1k, l_1d):
-    numerator = (t_S(l_1=l_1d, l_2=0) - t_S(l_1=l_1k, l_2=0)) * l_1k
-    denominator = (t_S(l_1=l_1k, l_2=0) - t_S(l_1=0, l_2=0)) * (l_1d-l_1k)
-    return numerator / denominator
-
-
-def kappa_2(l_2k, l_2d):
-    numerator = (t_S(l_1=0, l_2=l_2d) - t_S(l_1=0, l_2=l_2k)) * l_2k
-    denominator = (t_S(l_1=0, l_2=l_2k) - t_S(l_1=0, l_2=0)) * (l_2d-l_2k)
-    return numerator / denominator
-
-def kappa_12(l_1k, l_1d, l_2k, l_2d):
-    numerator = (t_S(l_1=l_1d, l_2=l_2d) - t_S(l_1=l_1k, l_2=l_2k)) * np.sqrt(l_1k**2 + l_2k**2)
-    denominator = (t_S(l_1=l_1k, l_2=l_2k) - t_S(l_1=0, l_2=0)) * np.sqrt((l_1d-l_1k)**2 + (l_2d-l_2k)**2)
-    return numerator / denominator
-
-def r1(l_1k, l_2k):
-    numerator = t_S(l_1=l_1k, l_2=0) - t_S(l_1=0, l_2=0)
-    denominator = t_S(l_1=l_1k, l_2=l_2k) - t_S(l_1=0, l_2=0)
-    return numerator / denominator
-
-def r2(l_1k, l_2k):
-    numerator = t_S(l_1=0, l_2=l_2k) - t_S(l_1=0, l_2=0)
-    denominator = t_S(l_1=l_1k, l_2=l_2k) - t_S(l_1=0, l_2=0)
-    return numerator / denominator
-
-k1 = kappa_1(l_1k=l_1k, l_1d=l_1d)
-k2 = kappa_2(l_2k=l_2k, l_2d=l_2d)
-k12 = kappa_12(l_1k=l_1k, l_1d=l_1d, l_2k=l_2k, l_2d=l_2d)
-r1 = r1(l_1k=l_1k, l_2k=l_2k)
-r2 = r2(l_1k=l_1k, l_2k=l_2k)
+k1 = kappa_1(l_1k=l_1k, l_1d=l_1d, t_S=t_S)
+k2 = kappa_2(l_2k=l_2k, l_2d=l_2d, t_S=t_S)
+k12 = kappa_12(l_1k=l_1k, l_1d=l_1d, l_2k=l_2k, l_2d=l_2d, t_S=t_S)
+r1 = r1(l_1k=l_1k, l_2k=l_2k, t_S=t_S)
+r2 = r2(l_1k=l_1k, l_2k=l_2k, t_S=t_S)
 
 M_Ed = t_S(l_1=l_1d, l_2=l_2d)
 

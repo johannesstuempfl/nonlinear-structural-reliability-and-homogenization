@@ -74,15 +74,15 @@ def FORM_fmincon(g, dg, distr:ERANataf, u0:float = 0.1,
     # nonlinear constraint: H(u) <= 0
     H    = lambda u: g(distr.U2X(u))
     
-    # JO: Custom constraints to stay in reasonable load regimes
-    upper_L1 = 6.0   # physical upper limit for Snow Load on Ground
-    upper_L2 = 2.0   # physical upper limit for Wind velocity pressure
+    # # JO: Custom constraints to stay in reasonable load regimes
+    # upper_L1 = 6.0   # physical upper limit for Snow Load on Ground
+    # upper_L2 = 2.0   # physical upper limit for Wind velocity pressure
 
-    cons = [
-        {'type': 'ineq', 'fun': lambda u: -H(u)},
-        {'type': 'ineq', 'fun': lambda u: upper_L1 - distr.U2X(np.ravel(u)).ravel()[3]},  # L1 <= upper_L1
-        {'type': 'ineq', 'fun': lambda u: upper_L2 - distr.U2X(np.ravel(u)).ravel()[5]},  # L2 <= upper_L2
-    ]
+    # cons = [
+    #     {'type': 'ineq', 'fun': lambda u: -H(u)},
+    #     {'type': 'ineq', 'fun': lambda u: upper_L1 - distr.U2X(np.ravel(u)).ravel()[3]},  # L1 <= upper_L1
+    #     {'type': 'ineq', 'fun': lambda u: upper_L2 - distr.U2X(np.ravel(u)).ravel()[5]},  # L2 <= upper_L2
+    # ]
 
     # method for minimization
     alg = 'SLSQP'
@@ -117,13 +117,13 @@ def FORM_fmincon(g, dg, distr:ERANataf, u0:float = 0.1,
                 return grad.ravel()
         
         # Run the optimization function without the gradient information
-        # cons = ({'type': 'ineq', 'fun': lambda u: -H(u)})
+        cons = ({'type': 'ineq', 'fun': lambda u: -H(u)})
         
-        cons = [
-        {'type': 'ineq', 'fun': lambda u: -H(u)},
-        {'type': 'ineq', 'fun': lambda u: upper_L1 - distr.U2X(np.ravel(u)).ravel()[3]},  # L1 <= upper_L1
-        {'type': 'ineq', 'fun': lambda u: upper_L2 - distr.U2X(np.ravel(u)).ravel()[5]},  # L2 <= upper_L2
-        ]
+        # cons = [
+        # {'type': 'ineq', 'fun': lambda u: -H(u)},
+        # {'type': 'ineq', 'fun': lambda u: upper_L1 - distr.U2X(np.ravel(u)).ravel()[3]},  # L1 <= upper_L1
+        # {'type': 'ineq', 'fun': lambda u: upper_L2 - distr.U2X(np.ravel(u)).ravel()[5]},  # L2 <= upper_L2
+        # ]
         
         res = sp.optimize.minimize(dist_fun, u0, constraints=cons, method=alg, options = {'maxiter' : maxit, 'ftol' : tol})
 
@@ -135,13 +135,13 @@ def FORM_fmincon(g, dg, distr:ERANataf, u0:float = 0.1,
             grad   = np.dot(J , dg(x))
             return grad.ravel()
         
-        # cons = ({'type': 'ineq', 'fun': lambda u: -H(u), 'jac': lambda u: -dgu(u)})
+        cons = ({'type': 'ineq', 'fun': lambda u: -H(u), 'jac': lambda u: -dgu(u)})
         
-        cons = [
-        {'type': 'ineq', 'fun': lambda u: -H(u), 'jac': lambda u: -dgu(u)},
-        {'type': 'ineq', 'fun': lambda u: upper_L1 - distr.U2X(np.ravel(u)).ravel()[3]},  # L1 <= upper_L1
-        {'type': 'ineq', 'fun': lambda u: upper_L2 - distr.U2X(np.ravel(u)).ravel()[5]},  # L2 <= upper_L2
-        ]
+        # cons = [
+        # {'type': 'ineq', 'fun': lambda u: -H(u), 'jac': lambda u: -dgu(u)},
+        # {'type': 'ineq', 'fun': lambda u: upper_L1 - distr.U2X(np.ravel(u)).ravel()[3]},  # L1 <= upper_L1
+        # {'type': 'ineq', 'fun': lambda u: upper_L2 - distr.U2X(np.ravel(u)).ravel()[5]},  # L2 <= upper_L2
+        # ]
         res = sp.optimize.minimize(dist_fun, u0, constraints=cons, method=alg, options={'maxiter' : maxit, 'ftol' : tol})
 
     # unpack results

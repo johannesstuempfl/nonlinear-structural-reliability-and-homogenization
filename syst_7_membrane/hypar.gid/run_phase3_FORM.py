@@ -38,14 +38,9 @@ import KratosMultiphysics.ConstitutiveLawsApplication as cla
 
 from ERA_Distribution_Classes_Python.Classes.ERADist import ERADist
 from ERA_Distribution_Classes_Python.Classes.ERANataf import ERANataf
-# IMPORTANT: use FORM_HLRF, not FORM_fmincon. FORM_fmincon.py in this ERA
-# package has been hard-customized for syst_4's specific 7-variable frame
-# problem - it hardcodes indices x[3]/x[5] and physical load bounds into its
-# constraint list, and will crash (index out of range) on our 2-variable
-# problem. FORM_HLRF.py is the clean, general, unmodified Rackwitz-Fiessler
-# implementation - which is also literally the method the paper itself cites
-# (reference [15]), so it's the more faithful choice here anyway.
 from ERA_Distribution_Classes_Python.Classes.FORM_HLRF import FORM_HLRF
+from ERA_Distribution_Classes_Python.Classes.FORM_fmincon import FORM_fmincon
+from measures_of_nonlinearity import kappa_1, kappa_2, kappa_12, r1, r2
 
 # Kratos's own per-step logging (STEP/TIME lines, mdpa read summaries, etc.)
 # is very verbose and would otherwise drown out the [call N] trace below,
@@ -54,9 +49,120 @@ KratosMultiphysics.Logger.GetDefaultOutput().SetSeverity(KratosMultiphysics.Logg
 
 THICKNESS = 0.001  # m, converts Pa (true stress, what Kratos computes) -> kN/m
                    # (the resultant convention the paper and StructuralMaterials.json use)
+                   
+def _run_static_kratos_linear(L_kNm2: float) -> float:
+    L_Pa = max(L_kNm2, 0.0) * 1000.0
+    params_dict = {
+        "problem_data": {
+            "problem_name": "hypar_static",
+            "parallel_type": "OpenMP",
+            "echo_level": 0,
+            "start_time": 0.0,
+            "end_time": 1.0
+        },
+        "solver_settings": {
+            "solver_type": "static",
+            "model_part_name": "Structure",
+            "domain_size": 3,
+            "echo_level": 0,
+            "analysis_type": "linear",
+            "model_import_settings": {
+                "input_type": "mdpa",
+                "input_filename": "formfinding_result_model"
+            },
+            "material_import_settings": {
+                "materials_filename": "StructuralMaterials.json"
+            },
+            "time_stepping": {"time_step": 1.0},
+            "line_search": False,
+            "convergence_criterion": "residual_criterion",
+            "displacement_relative_tolerance": 1e-3,
+            "displacement_absolute_tolerance": 1e-6,
+            "residual_relative_tolerance": 1e-3,
+            "residual_absolute_tolerance": 1e-6,
+            "max_iteration": 80,
+            "rotation_dofs": False,
+            "volumetric_strain_dofs": False
+        },
+        "processes": {
+            "constraints_process_list": [{
+                "python_module": "assign_vector_variable_process",
+                "kratos_module": "KratosMultiphysics",
+                "process_name": "AssignVectorVariableProcess",
+                "Parameters": {
+                    "model_part_name": "Structure.DISPLACEMENT_Displacement_Auto1",
+                    "variable_name": "DISPLACEMENT",
+                    "interval": [0.0, "End"],
+                    "constrained": [True, True, True],
+                    "value": [0.0, 0.0, 0.0]
+                }
+            }],
+            "loads_process_list": [],
+            "list_other_processes": []
+        },
+        "output_processes": {}
+    }
+
+    # convergence_criterion / tolerances / max_iteration can stay as-is, unused
+
+    parameters = KratosMultiphysics.Parameters(json.dumps(params_dict))
+    model = KratosMultiphysics.Model()
+    analysis = StructuralMechanicsAnalysis(model, parameters)
+    analysis.Initialize()
+
+    mp = model.GetModelPart("Structure")
+    membrane_mp = mp.GetSubModelPart("Parts_Membrane_Membrane_Auto1")
+    # ... same tributary_area + PointLoadCondition3D1N setup as before ...
+    
+    tributary_area = {}
+    for elem in membrane_mp.Elements:
+        nodes = list(elem.GetNodes())
+        x1, y1 = nodes[0].X0, nodes[0].Y0
+        x2, y2 = nodes[1].X0, nodes[1].Y0
+        x3, y3 = nodes[2].X0, nodes[2].Y0
+        area = 0.5 * abs((x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1))
+        for n in nodes:
+            tributary_area[n.Id] = tributary_area.get(n.Id, 0.0) + area / 3.0
+
+    prop = mp.GetProperties()[1]
+    load_sub_mp = mp.CreateSubModelPart("SnowLoad")
+    cond_id = 100000
+    nodes_with_load = []
+    for node_id, area in tributary_area.items():
+        if area <= 0.0:
+            continue
+        cond_id += 1
+        node = mp.Nodes[node_id]
+        cond = mp.CreateNewCondition("PointLoadCondition3D1N", cond_id, [node_id], prop)
+        load_sub_mp.AddCondition(cond)
+        load_sub_mp.AddNode(node, 0)
+        nodes_with_load.append((node, area))
+        
+    for node, area in nodes_with_load:
+        node.SetSolutionStepValue(sma.POINT_LOAD, [0.0, 0.0, -L_Pa * area])
+
+    analysis.time = analysis._AdvanceTime()
+    analysis.InitializeSolutionStep()
+    analysis._GetSolver().SolveSolutionStep()   # single linear solve, no iteration loop
+    analysis.FinalizeSolutionStep()
+
+    all_s11 = []
+    for elem in membrane_mp.Elements:
+        stresses = elem.CalculateOnIntegrationPoints(KratosMultiphysics.PK2_STRESS_VECTOR, mp.ProcessInfo)
+        all_s11.extend(s[0] for s in stresses)
+    
+    # Test JO
+    sample_node = nodes_with_load[100][0]   # pick one specific node, same one every call since the mesh read order is deterministic
+    disp = sample_node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT)
+    print(f"    sample node {sample_node.Id}: DISPLACEMENT = ({disp[0]:.6e}, {disp[1]:.6e}, {disp[2]:.6e})  at L={L_kNm2:.4f}")
+    # End Test JO 
+    
+    analysis.Finalize()
+
+    return max(all_s11) * THICKNESS / 1000.0   # hard max, kN/m - no p-norm needed for a one-off comparison
 
 
-def _run_static_kratos(L_kNm2: float) -> float:
+def _run_static_kratos_nonlinear(L_kNm2: float) -> float:
     """
     Runs ONE complete, standalone static/non-linear Kratos analysis: reads
     formfinding_result_model.mdpa fresh (Stage 1's equilibrium-shape output),
@@ -265,7 +371,7 @@ def _run_static_kratos(L_kNm2: float) -> float:
 _CALL_COUNT = [0]  # plain list so the closure below can mutate it (no `nonlocal` needed)
 
 
-def t_S_kratos(L):
+def t_S_kratos_nonlinear(L):
     """
     The structural-response function - this is syst_7's analog of syst_4's
     t_S(l_1, l_2). Takes a snow load L [kN/m^2] and returns the resulting max
@@ -298,7 +404,46 @@ def t_S_kratos(L):
         # cleanly (TypeError) if FORM_HLRF tries automatic differentiation
         # first, correctly forcing it to fall back to finite differences -
         # see GUIDE.md gotcha #10. Don't remove it thinking it's redundant.
-        val = _run_static_kratos(float(Lv))
+        val = _run_static_kratos_nonlinear(float(Lv))
+        out[i] = val
+        print(f"  [call {_CALL_COUNT[0]:4d}] L={Lv:9.4f} kN/m^2  ->  e={val:9.4f} kN/m", flush=True)
+    return out[0] if scalar_in else out
+
+
+def t_S_kratos_linear(L):
+    """
+    The structural-response function - this is syst_7's analog of syst_4's
+    t_S(l_1, l_2). Takes a snow load L [kN/m^2] and returns the resulting max
+    warp-direction membrane stress [kN/m].
+
+    Accepts either a plain scalar OR a 1D array-like of L values, and returns
+    a matching scalar or 1D array. This dual behavior is NOT optional - it's
+    required by how FORM_HLRF's finite-difference gradient estimator calls
+    g(x) internally: once with a single point (1D array of length d, the
+    number of random variables) to get the LSF value, and once with a (d,d)
+    matrix (one row per perturbed dimension) to estimate the gradient. Your
+    own g(x) needs to pass whatever "L slice" it receives straight through to
+    this function and trust it to handle both shapes - see g_opt_a/g_opt_b
+    below for exactly how that's done (x[..., 1] handles both cases via
+    numpy's ellipsis indexing).
+
+    Every call prints its own [call N] trace line - deliberately verbose,
+    because watching this trace is how you tell whether FORM's search is
+    converging sensibly or wandering into a bad region (see the "Middle
+    part"/"Lower part" transcripts referenced in the module docstring for
+    what a problematic trace looks like: repeated near-identical L values
+    with inconsistent e, or L drifting to physically extreme values).
+    """
+    scalar_in = (np.ndim(L) == 0)
+    L_arr = np.atleast_1d(np.asarray(L, dtype=float))
+    out = np.empty_like(L_arr)
+    for i, Lv in enumerate(L_arr):
+        _CALL_COUNT[0] += 1
+        # NOTE: this float(Lv) conversion is also what makes autograd fail
+        # cleanly (TypeError) if FORM_HLRF tries automatic differentiation
+        # first, correctly forcing it to fall back to finite differences -
+        # see GUIDE.md gotcha #10. Don't remove it thinking it's redundant.
+        val = _run_static_kratos_linear(float(Lv))
         out[i] = val
         print(f"  [call {_CALL_COUNT[0]:4d}] L={Lv:9.4f} kN/m^2  ->  e={val:9.4f} kN/m", flush=True)
     return out[0] if scalar_in else out
@@ -307,27 +452,36 @@ def t_S_kratos(L):
 if __name__ == "__main__":
     print("===Test Phase by Jo===")
     
-    N_out = t_S_kratos(0.0)
-    print(f"\nN = {N_out}")
+    def kappa_1(l_1k, l_1d, t_S):
+        numerator = (t_S(L=l_1d) - t_S(L=l_1k)) * l_1k
+        denominator = (t_S(L=l_1k) - t_S(L=0.0)) * (l_1d-l_1k)
+        return numerator / denominator
     
+    k1 = kappa_1(l_1k=0.6,  l_1d=0.9, t_S=t_S_kratos_linear)
+    print(f"kappa_1: {k1}")
     
+    # def y0(l_k, t_S):
+    #     return t_S(l_k) / t_S(0.0)
     
-    # ------------------------------------------------------------------
-    # Regression check: t_S_kratos should reproduce run_phase2.py's already-
-    # validated curve at L=0.6 and L=0.9 (5.517 and 7.070 kN/m). If these
-    # don't match closely, something about the generalization broke - don't
-    # trust anything below until these two lines look right.
-    # ------------------------------------------------------------------
-    # print("=== Sanity check against Phase 2 results ===")
-    # e_06 = t_S_kratos(0.6)
-    # e_09 = t_S_kratos(0.9)
-    # print(f"t_S_kratos(0.6) = {e_06:.3f} kN/m  (Phase 2 gave 5.517, paper e_k=5.7)")
-    # print(f"t_S_kratos(0.9) = {e_09:.3f} kN/m  (Phase 2 gave 7.070, paper e_d,a=7.3)")
-
+    # y0 = y0(l_k=0.6, t_S=t_S_kratos_nonlinear)
+    # print(f"y0: {y0}")
+    
+    # N_lin = t_S_kratos_linear(0.9)
+    # print(f"\nN = {N_lin}")
+    
+    # N_nonl = t_S_kratos_nonlinear(0.9)
+    # print(f"\nN = {N_nonl}")
+    
+    # print(f"Difference: {N_nonl-N_lin}")
     # # ------------------------------------------------------------------
-    # # Random variables - Fusseder et al. 2021, Table 1. Same ERADist('...',
-    # # 'MOM', [mean, std]) pattern as syst_4; 'MOM' = method of moments, so the
-    # # second argument is [mean, std], not [mean, cov] - std = mean * cov.
+    # # print("=== Sanity check against Phase 2 results ===")
+    # # e_06 = t_S_kratos(0.6)
+    # # e_09 = t_S_kratos(0.9)
+    # # print(f"t_S_kratos(0.6) = {e_06:.3f} kN/m  (Phase 2 gave 5.517, paper e_k=5.7)")
+    # # print(f"t_S_kratos(0.9) = {e_09:.3f} kN/m  (Phase 2 gave 7.070, paper e_d,a=7.3)")
+
+    # # # ------------------------------------------------------------------
+    # # Random variables - Fusseder et al. 2021
     # # ------------------------------------------------------------------
     # mu_L, cov_L = 0.34, 0.3
     # L_dist = ERADist('gumbel', 'MOM', [mu_L, mu_L * cov_L])       # snow load, kN/m^2
@@ -335,39 +489,33 @@ if __name__ == "__main__":
     # mu_M, cov_M = 1.0, 0.1
     # M_dist = ERADist('lognormal', 'MOM', [mu_M, mu_M * cov_M])    # membrane tensile strength
 
-    # marginal_dist = [M_dist, L_dist]   # x[0] = M, x[1] = L - keep this order consistent everywhere below
-    # nataf = ERANataf(M=marginal_dist, Correlation=np.eye(2))       # uncorrelated, like syst_4's R_xx
+    # marginal_dist = [M_dist, L_dist]   # x[0] = M, x[1] = L
+    # nataf = ERANataf(M=marginal_dist, Correlation=np.eye(2))
 
     # gamma_F = 1.5   # partial safety factor, load side
-    # gamma_M = 1.4   # partial safety factor, resistance side (from the Technical Specification, per the paper)
+    # gamma_M = 1.4   # partial safety factor, resistance side (from Technical Specification, per the paper)
 
-    # # Characteristic values: 98th percentile of the load, 5th percentile of
-    # # the resistance - standard Eurocode 0 convention, same as syst_4's s_k/m_k.
+    # # Characteristic values: 98th percentile of the load, 5th percentile of the resistance
     # l_k = L_dist.icdf(0.98)
     # m_k = M_dist.icdf(0.05)
-    # print(f"\nl_k = {l_k:.4f} kN/m^2  (paper: 0.6)")
-    # print(f"m_k = {m_k:.4f} kN/m^2  (paper: implied ~0.83-0.85 from Fig 2 scale)")
+    # print(f"\nl_k = {l_k:.4f} kN/m^2")
+    # print(f"m_k = {m_k:.4f} kN/m^2")
 
+    # # # ------------------------------------------------------------------
+    # # Design values p for option 1 and 2 
     # # ------------------------------------------------------------------
-    # # Design values d_a, d_b - paper eq. (11). This is the semi-probabilistic
-    # # design computed ONCE, deterministically, before any reliability
-    # # analysis: it answers "how much design margin do we get from applying
-    # # the two partial safety factors, under design option (a) vs (b)?"
-    # #   option (a): apply gamma_F to the LOAD before computing its effect (tS)
-    # #   option (b): apply gamma_F to the EFFECT (tS output) directly
-    # # These give the same answer only if tS is linear - it isn't (that's the
-    # # whole point of the paper), so d_a != d_b in general.
-    # # ------------------------------------------------------------------
-    # e_d_a_input = t_S_kratos(gamma_F * l_k)   # tS(gamma_F * l_k) - option (a)'s effect
-    # e_k_for_b = t_S_kratos(l_k)               # tS(l_k) - option (b) applies gamma_F AFTER this
-    # d_a = gamma_M * e_d_a_input / m_k
-    # d_b = gamma_M * gamma_F * e_k_for_b / m_k
-    # print(f"\ntS(gamma_F * l_k) = {e_d_a_input:.4f} kN/m  (paper e_d,a=7.3)")
-    # print(f"tS(l_k)           = {e_k_for_b:.4f} kN/m  (paper e_k=5.7)")
-    # print(f"d_a = {d_a:.5f}")
-    # print(f"d_b = {d_b:.5f}")
+    # e_d_opt_1 = t_S_kratos(gamma_F * l_k)   # Option 1 
+    # e_d_opt_2 = gamma_F * t_S_kratos(l_k)   # Option 2 
+    
+    # p_opt_1 = gamma_M * e_d_opt_1 / m_k
+    # p_opt_2 = gamma_M * e_d_opt_2 / m_k
+    
+    # print(f"\ntS(gamma_F * l_k) = {e_d_opt_1:.4f} kN/m")
+    # print(f"tS(l_k)           = {e_d_opt_2:.4f} kN/m")
+    # print(f"p_opt_1 = {p_opt_1:.5f}")
+    # print(f"p_opt_2 = {p_opt_2:.5f}")
 
-    # # ------------------------------------------------------------------
+    # # # ------------------------------------------------------------------
     # # Limit-state functions - paper eq. (12): g = d*M - tS(L). This is the
     # # direct analog of syst_4's g_opt_1_FORM: resistance_side - action_side.
     # # x[..., 0] / x[..., 1] (ellipsis indexing) instead of x[0]/x[1] or
@@ -375,40 +523,28 @@ if __name__ == "__main__":
     # # g with a single point (x.shape == (2,)) or a perturbation batch
     # # (x.shape == (2,2)) - see t_S_kratos's docstring above.
     # # ------------------------------------------------------------------
-    # def g_opt_a(x):
+    # def g_opt_1(x):
     #     x = np.asarray(x, dtype=float)
-    #     return d_a * x[..., 0] - t_S_kratos(x[..., 1])
+    #     return p_opt_1 * x[..., 0] - t_S_kratos(x[..., 1])
 
-    # def g_opt_b(x):
+    # def g_opt_2(x):
     #     x = np.asarray(x, dtype=float)
-    #     return d_b * x[..., 0] - t_S_kratos(x[..., 1])
+    #     return p_opt_2 * x[..., 0] - t_S_kratos(x[..., 1])
+
 
     # # ------------------------------------------------------------------
-    # # FORM via HLRF (Rackwitz-Fiessler) - syst_4 used FORM_fmincon, we use
-    # # FORM_HLRF instead (see the import comment above for why). dg=[] tells
-    # # it to estimate the gradient itself (autograd first, finite differences
-    # # as the fallback that actually gets used here). u0=0 starts the search
-    # # at the mean point in standard-normal space, same as syst_4.
-    # #
-    # # maxit/tol: HLRF's own convergence check is ||u_{k+1} - u_k|| <= tol in
-    # # standard-normal space. The DEFAULT tol=1e-6 turned out to be tighter
-    # # than our Kratos-based g(x) can reliably resolve (a real FE solve always
-    # # carries some small numerical noise floor), so it was capped at
-    # # maxit=... iterations without satisfying that criterion. Loosening tol to
-    # # 1e-4 (still tight enough to trust the resulting beta to 3 significant
-    # # figures) let it actually terminate cleanly instead of just running out
-    # # of iterations. If FORM_HLRF prints "may have converged to wrong value!"
-    # # afterwards, that means it STILL hit maxit before converging - see the
-    # # module docstring for the current status of option (b).
+    # # FORM via HLRF  (fmincon tested extreme big load values -> Kratos crashed)
     # # ------------------------------------------------------------------
     # print("\n=== FORM (HLRF) - Design option (a) ===")
-    # u_star_a, x_star_a, beta_a, Pf_a, _, _ = FORM_HLRF(
-    #     g=g_opt_a, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
+    # u_star_1, x_star_1, beta_1, Pf_1, _, _ = FORM_HLRF(
+    #     g=g_opt_1, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
 
     # print("\n=== FORM (HLRF) - Design option (b) ===")
-    # u_star_b, x_star_b, beta_b, Pf_b, _, _ = FORM_HLRF(
-    #     g=g_opt_b, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
+    # u_star_2, x_star_2, beta_2, Pf_2, _, _ = FORM_HLRF(
+    #     g=g_opt_2, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
 
     # print("\n\n=== SUMMARY ===")
-    # print(f"Design option (a): beta = {beta_a:.3f}   (paper: 4.96)")
-    # print(f"Design option (b): beta = {beta_b:.3f}   (paper: 5.55)")
+    # print(f"Design option (1): beta = {beta_1:.3f}   (paper: 4.96)")
+    # print(f"x_star_1: {x_star_1}")
+    # print(f"Design option (2): beta = {beta_2:.3f}   (paper: 5.56)")
+    # print(f"x_star_2: {x_star_2}")

@@ -68,7 +68,7 @@ params_dict = {
         "displacement_relative_tolerance": 1e-3,
         "displacement_absolute_tolerance": 1e-6,
         "residual_relative_tolerance": 1e-3,
-        "residual_absolute_tolerance": 1e-2,
+        "residual_absolute_tolerance": 1e-6,
         "max_iteration": 50,
         "rotation_dofs": False,
         "volumetric_strain_dofs": False

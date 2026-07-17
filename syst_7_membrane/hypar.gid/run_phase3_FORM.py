@@ -151,11 +151,10 @@ def _run_static_kratos_linear(L_kNm2: float) -> float:
         stresses = elem.CalculateOnIntegrationPoints(KratosMultiphysics.PK2_STRESS_VECTOR, mp.ProcessInfo)
         all_s11.extend(s[0] for s in stresses)
     
-    # Test JO
-    sample_node = nodes_with_load[100][0]   # pick one specific node, same one every call since the mesh read order is deterministic
-    disp = sample_node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT)
-    print(f"    sample node {sample_node.Id}: DISPLACEMENT = ({disp[0]:.6e}, {disp[1]:.6e}, {disp[2]:.6e})  at L={L_kNm2:.4f}")
-    # End Test JO 
+    # #  Verify the displacements
+    # sample_node = nodes_with_load[100][0]   # pick one specific node, same one every call since the mesh read order is deterministic
+    # disp = sample_node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT)
+    # print(f"    sample node {sample_node.Id}: DISPLACEMENT = ({disp[0]:.6e}, {disp[1]:.6e}, {disp[2]:.6e})  at L={L_kNm2:.4f}")
     
     analysis.Finalize()
 
@@ -260,15 +259,23 @@ def _run_static_kratos_nonlinear(L_kNm2: float) -> float:
 
     prop = mp.GetProperties()[1]
 
+    # Linear Elastic Plane Stress 2D Law
     base_props = KratosMultiphysics.Properties(2)
     base_props.SetValue(KratosMultiphysics.CONSTITUTIVE_LAW, sma.LinearElasticPlaneStress2DLaw())
-    # (or cla.LinearElasticOrthotropic2DLaw() here instead, if you want wrinkling
-    #  + orthotropic combined - set that law's 4 variables on base_props too)
     base_props.SetValue(KratosMultiphysics.YOUNG_MODULUS, 600000000.0)
     base_props.SetValue(KratosMultiphysics.POISSON_RATIO, 0.4)
 
     prop.SetValue(KratosMultiphysics.CONSTITUTIVE_LAW, cla.WrinklingLinear2DLaw())
     prop.AddSubProperties(base_props)
+
+
+    # # WrinklingLinear2DLaw (not chosen, since results are less accurate to paper)
+    # prop.SetValue(KratosMultiphysics.CONSTITUTIVE_LAW, cla.LinearElasticOrthotropic2DLaw())
+    # prop.SetValue(KratosMultiphysics.YOUNG_MODULUS_X, 600000000.0)
+    # prop.SetValue(KratosMultiphysics.YOUNG_MODULUS_Y, 600000000.0)
+    # prop.SetValue(KratosMultiphysics.SHEAR_MODULUS_XY, 214285714.0)
+    # prop.SetValue(KratosMultiphysics.POISSON_RATIO_XY, 0.4)
+    
     
     for elem in membrane_mp.Elements:
         elem.Initialize(mp.ProcessInfo)
@@ -457,7 +464,7 @@ if __name__ == "__main__":
         denominator = (t_S(L=l_1k) - t_S(L=0.0)) * (l_1d-l_1k)
         return numerator / denominator
     
-    k1 = kappa_1(l_1k=0.6,  l_1d=0.9, t_S=t_S_kratos_linear)
+    k1 = kappa_1(l_1k=0.6,  l_1d=0.9, t_S=t_S_kratos_nonlinear)
     print(f"kappa_1: {k1}")
     
     # def y0(l_k, t_S):
@@ -473,14 +480,8 @@ if __name__ == "__main__":
     # print(f"\nN = {N_nonl}")
     
     # print(f"Difference: {N_nonl-N_lin}")
-    # # ------------------------------------------------------------------
-    # # print("=== Sanity check against Phase 2 results ===")
-    # # e_06 = t_S_kratos(0.6)
-    # # e_09 = t_S_kratos(0.9)
-    # # print(f"t_S_kratos(0.6) = {e_06:.3f} kN/m  (Phase 2 gave 5.517, paper e_k=5.7)")
-    # # print(f"t_S_kratos(0.9) = {e_09:.3f} kN/m  (Phase 2 gave 7.070, paper e_d,a=7.3)")
 
-    # # # ------------------------------------------------------------------
+    # # ------------------------------------------------------------------
     # # Random variables - Fusseder et al. 2021
     # # ------------------------------------------------------------------
     # mu_L, cov_L = 0.34, 0.3
@@ -504,8 +505,8 @@ if __name__ == "__main__":
     # # # ------------------------------------------------------------------
     # # Design values p for option 1 and 2 
     # # ------------------------------------------------------------------
-    # e_d_opt_1 = t_S_kratos(gamma_F * l_k)   # Option 1 
-    # e_d_opt_2 = gamma_F * t_S_kratos(l_k)   # Option 2 
+    # e_d_opt_1 = t_S_kratos_nonlinear(gamma_F * l_k)   # Option 1 
+    # e_d_opt_2 = gamma_F * t_S_kratos_nonlinear(l_k)   # Option 2 
     
     # p_opt_1 = gamma_M * e_d_opt_1 / m_k
     # p_opt_2 = gamma_M * e_d_opt_2 / m_k
@@ -525,11 +526,11 @@ if __name__ == "__main__":
     # # ------------------------------------------------------------------
     # def g_opt_1(x):
     #     x = np.asarray(x, dtype=float)
-    #     return p_opt_1 * x[..., 0] - t_S_kratos(x[..., 1])
+    #     return p_opt_1 * x[..., 0] - t_S_kratos_nonlinear(x[..., 1])
 
     # def g_opt_2(x):
     #     x = np.asarray(x, dtype=float)
-    #     return p_opt_2 * x[..., 0] - t_S_kratos(x[..., 1])
+    #     return p_opt_2 * x[..., 0] - t_S_kratos_nonlinear(x[..., 1])
 
 
     # # ------------------------------------------------------------------

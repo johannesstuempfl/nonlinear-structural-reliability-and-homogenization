@@ -40,7 +40,6 @@ from ERA_Distribution_Classes_Python.Classes.ERADist import ERADist
 from ERA_Distribution_Classes_Python.Classes.ERANataf import ERANataf
 from ERA_Distribution_Classes_Python.Classes.FORM_HLRF import FORM_HLRF
 from ERA_Distribution_Classes_Python.Classes.FORM_fmincon import FORM_fmincon
-from measures_of_nonlinearity import kappa_1, kappa_2, kappa_12, r1, r2
 
 # Kratos's own per-step logging (STEP/TIME lines, mdpa read summaries, etc.)
 # is very verbose and would otherwise drown out the [call N] trace below,
@@ -50,8 +49,10 @@ KratosMultiphysics.Logger.GetDefaultOutput().SetSeverity(KratosMultiphysics.Logg
 THICKNESS = 0.001  # m, converts Pa (true stress, what Kratos computes) -> kN/m
                    # (the resultant convention the paper and StructuralMaterials.json use)
                    
-def _run_static_kratos_linear(L_kNm2: float) -> float:
-    L_Pa = max(L_kNm2, 0.0) * 1000.0
+def _run_static_kratos_linear(L_snow_kNm2: float, L_wind_kNm2: float = 0.0) -> float:
+    L_snow_Pa = max(L_snow_kNm2, 0.0) * 1000.0
+    L_wind_Pa = max(L_wind_kNm2, 0.0) * 1000.0
+    
     params_dict = {
         "problem_data": {
             "problem_name": "hypar_static",
@@ -103,8 +104,6 @@ def _run_static_kratos_linear(L_kNm2: float) -> float:
         "output_processes": {}
     }
 
-    # convergence_criterion / tolerances / max_iteration can stay as-is, unused
-
     parameters = KratosMultiphysics.Parameters(json.dumps(params_dict))
     model = KratosMultiphysics.Model()
     analysis = StructuralMechanicsAnalysis(model, parameters)
@@ -112,8 +111,8 @@ def _run_static_kratos_linear(L_kNm2: float) -> float:
 
     mp = model.GetModelPart("Structure")
     membrane_mp = mp.GetSubModelPart("Parts_Membrane_Membrane_Auto1")
-    # ... same tributary_area + PointLoadCondition3D1N setup as before ...
     
+    # Snow: plan (X-Y) projected area, force in -Z
     tributary_area = {}
     for elem in membrane_mp.Elements:
         nodes = list(elem.GetNodes())
@@ -123,27 +122,41 @@ def _run_static_kratos_linear(L_kNm2: float) -> float:
         area = 0.5 * abs((x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1))
         for n in nodes:
             tributary_area[n.Id] = tributary_area.get(n.Id, 0.0) + area / 3.0
+    
+    # Wind: frontal (Y-Z) projected area, force in +X
+    frontal_area = {}
+    for elem in membrane_mp.Elements:
+        nodes = list(elem.GetNodes())
+        y1, z1 = nodes[0].Y0, nodes[0].Z0
+        y2, z2 = nodes[1].Y0, nodes[1].Z0
+        y3, z3 = nodes[2].Y0, nodes[2].Z0
+        area = 0.5 * abs((y2 - y1) * (z3 - z1) - (y3 - y1) * (z2 - z1))
+        for n in nodes:
+            frontal_area[n.Id] = frontal_area.get(n.Id, 0.0) + area / 3.0
 
     prop = mp.GetProperties()[1]
-    load_sub_mp = mp.CreateSubModelPart("SnowLoad")
+    load_sub_mp = mp.CreateSubModelPart("CombinedLoad")
     cond_id = 100000
     nodes_with_load = []
-    for node_id, area in tributary_area.items():
-        if area <= 0.0:
+    for node_id in set(tributary_area) | set(frontal_area):
+        snow_a = tributary_area.get(node_id, 0.0)
+        wind_a = frontal_area.get(node_id, 0.0)
+        if snow_a <= 0.0 and wind_a <= 0.0:
             continue
         cond_id += 1
         node = mp.Nodes[node_id]
         cond = mp.CreateNewCondition("PointLoadCondition3D1N", cond_id, [node_id], prop)
         load_sub_mp.AddCondition(cond)
         load_sub_mp.AddNode(node, 0)
-        nodes_with_load.append((node, area))
-        
-    for node, area in nodes_with_load:
-        node.SetSolutionStepValue(sma.POINT_LOAD, [0.0, 0.0, -L_Pa * area])
+        nodes_with_load.append((node, snow_a, wind_a))
+
+    for node, snow_a, wind_a in nodes_with_load:
+        node.SetSolutionStepValue(sma.POINT_LOAD, [L_wind_Pa * wind_a, 0.0, -L_snow_Pa * snow_a])
+
 
     analysis.time = analysis._AdvanceTime()
     analysis.InitializeSolutionStep()
-    analysis._GetSolver().SolveSolutionStep()   # single linear solve, no iteration loop
+    analysis._GetSolver().SolveSolutionStep()
     analysis.FinalizeSolutionStep()
 
     all_s11 = []
@@ -152,7 +165,7 @@ def _run_static_kratos_linear(L_kNm2: float) -> float:
         all_s11.extend(s[0] for s in stresses)
     
     # #  Verify the displacements
-    # sample_node = nodes_with_load[100][0]   # pick one specific node, same one every call since the mesh read order is deterministic
+    # sample_node = nodes_with_load[100][0]   # pick one specific node
     # disp = sample_node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT)
     # print(f"    sample node {sample_node.Id}: DISPLACEMENT = ({disp[0]:.6e}, {disp[1]:.6e}, {disp[2]:.6e})  at L={L_kNm2:.4f}")
     
@@ -161,7 +174,7 @@ def _run_static_kratos_linear(L_kNm2: float) -> float:
     return max(all_s11) * THICKNESS / 1000.0   # hard max, kN/m - no p-norm needed for a one-off comparison
 
 
-def _run_static_kratos_nonlinear(L_kNm2: float) -> float:
+def _run_static_kratos_nonlinear(L_snow_kNm2: float, L_wind_kNm2: float = 0.0) -> float:
     """
     Runs ONE complete, standalone static/non-linear Kratos analysis: reads
     formfinding_result_model.mdpa fresh (Stage 1's equilibrium-shape output),
@@ -175,7 +188,8 @@ def _run_static_kratos_nonlinear(L_kNm2: float) -> float:
     and safest way to avoid any accumulated-deformation bugs, at the cost of
     re-reading the ~500-node mesh every time (fast, a fraction of a second).
     """
-    L_max_Pa = max(L_kNm2, 0.0) * 1000.0
+    L_snow_max_Pa = max(L_snow_kNm2, 0.0) * 1000.0
+    L_wind_max_Pa = max(L_wind_kNm2, 0.0) * 1000.0
 
     # How many load substeps to use for THIS particular target load. This
     # matters more than it looks: Newton-Raphson for a geometrically
@@ -190,7 +204,8 @@ def _run_static_kratos_nonlinear(L_kNm2: float) -> float:
     # 0.05 kN/m^2/step here as a cheaper (fewer Kratos calls -> faster FORM
     # runs) but still-safe middle ground; tighten this (e.g. to 0.02-0.03) if
     # you still see "!! non-convergence" warnings below.
-    n_steps = max(15, math.ceil(L_kNm2 / 0.05))
+    n_steps = max(15, math.ceil(L_snow_kNm2 / 0.05), math.ceil(L_wind_kNm2 / 0.05))
+
 
     # Same solver_settings structure as run_phase2.py's Stage 2, with
     # echo_level dropped to 0 (Logger severity above already silences most of
@@ -269,19 +284,18 @@ def _run_static_kratos_nonlinear(L_kNm2: float) -> float:
     prop.AddSubProperties(base_props)
 
 
-    # # WrinklingLinear2DLaw (not chosen, since results are less accurate to paper)
+    # WrinklingLinear2DLaw (not chosen, since results are less accurate to paper)
     # prop.SetValue(KratosMultiphysics.CONSTITUTIVE_LAW, cla.LinearElasticOrthotropic2DLaw())
     # prop.SetValue(KratosMultiphysics.YOUNG_MODULUS_X, 600000000.0)
     # prop.SetValue(KratosMultiphysics.YOUNG_MODULUS_Y, 600000000.0)
     # prop.SetValue(KratosMultiphysics.SHEAR_MODULUS_XY, 214285714.0)
     # prop.SetValue(KratosMultiphysics.POISSON_RATIO_XY, 0.4)
     
-    
     for elem in membrane_mp.Elements:
         elem.Initialize(mp.ProcessInfo)
-    # Tributary plan-projected area per node - see run_phase2.py part 2 for
-    # the full explanation. Recomputed every call since this is a fresh
-    # Model/mesh read each time (cheap: ~1000 triangles).
+        
+    
+    # Snow: plan (X-Y) projected area, force in -Z
     tributary_area = {}
     for elem in membrane_mp.Elements:
         nodes = list(elem.GetNodes())
@@ -292,48 +306,50 @@ def _run_static_kratos_nonlinear(L_kNm2: float) -> float:
         for n in nodes:
             tributary_area[n.Id] = tributary_area.get(n.Id, 0.0) + area / 3.0
 
-    # One PointLoadCondition3D1N per membrane node - see run_phase2.py part 3.
-    prop = mp.GetProperties()[1]
-    load_sub_mp = mp.CreateSubModelPart("SnowLoad")
+    # Wind: frontal (Y-Z) projected area, force in +X
+    frontal_area = {}
+    for elem in membrane_mp.Elements:
+        nodes = list(elem.GetNodes())
+        y1, z1 = nodes[0].Y0, nodes[0].Z0
+        y2, z2 = nodes[1].Y0, nodes[1].Z0
+        y3, z3 = nodes[2].Y0, nodes[2].Z0
+        area = 0.5 * abs((y2 - y1) * (z3 - z1) - (y3 - y1) * (z2 - z1))
+        for n in nodes:
+            frontal_area[n.Id] = frontal_area.get(n.Id, 0.0) + area / 3.0
+
+    prop_load = mp.GetProperties()[1]
+    load_sub_mp = mp.CreateSubModelPart("CombinedLoad")
     cond_id = 100000
-    nodes_with_load = []
-    for node_id, area in tributary_area.items():
-        if area <= 0.0:
+    nodes_with_load = []   # (node, snow_area, wind_area)
+    for node_id in set(tributary_area) | set(frontal_area):
+        snow_a = tributary_area.get(node_id, 0.0)
+        wind_a = frontal_area.get(node_id, 0.0)
+        if snow_a <= 0.0 and wind_a <= 0.0:
             continue
         cond_id += 1
         node = mp.Nodes[node_id]
-        cond = mp.CreateNewCondition("PointLoadCondition3D1N", cond_id, [node_id], prop)
+        cond = mp.CreateNewCondition("PointLoadCondition3D1N", cond_id, [node_id], prop_load)
         load_sub_mp.AddCondition(cond)
         load_sub_mp.AddNode(node, 0)
-        nodes_with_load.append((node, area))
+        nodes_with_load.append((node, snow_a, wind_a))
 
-    # Ramp 0 -> L_max_Pa over n_steps substeps, collecting every Gauss point's
-    # S11 (warp-direction) stress only at the FINAL step (that's the load
-    # level the caller actually asked for).
     all_s11 = []
     for step in range(n_steps):
         analysis.time = analysis._AdvanceTime()
         t_frac = (step + 1) / n_steps
-        L = t_frac * L_max_Pa
+        L_snow = t_frac * L_snow_max_Pa
+        L_wind = t_frac * L_wind_max_Pa
 
-        for node, area in nodes_with_load:
-            node.SetSolutionStepValue(sma.POINT_LOAD, [0.0, 0.0, -L * area])
+        for node, snow_a, wind_a in nodes_with_load:
+            node.SetSolutionStepValue(sma.POINT_LOAD, [L_wind * wind_a, 0.0, -L_snow * snow_a])
 
         analysis.InitializeSolutionStep()
-        # SolveSolutionStep() returns True/False - whether Newton-Raphson
-        # actually satisfied the convergence criterion this step. Unlike
-        # run_phase2.py, we DO check this here and print a loud warning if it
-        # fails, because a silently-non-converged step here would feed a
-        # slightly-wrong stress value into FORM's finite-difference gradient,
-        # which is exactly the kind of subtle corruption that caused the
-        # divergence episode documented in the module docstring / GUIDE.md
-        # gotcha #8.
         converged = analysis._GetSolver().SolveSolutionStep()
         analysis.FinalizeSolutionStep()
 
         if not converged:
-            print(f"    !! non-convergence at L_target={L_kNm2:.4f} kN/m^2, "
-                  f"substep {step+1}/{n_steps} (L_sub={L/1000.0:.4f})", flush=True)
+            print(f"    !! non-convergence at L_snow={L_snow_kNm2:.4f}, L_wind={L_wind_kNm2:.4f} kN/m^2, "
+                  f"substep {step+1}/{n_steps}", flush=True)
 
         if step == n_steps - 1:
             all_s11 = []
@@ -341,44 +357,22 @@ def _run_static_kratos_nonlinear(L_kNm2: float) -> float:
                 stresses = elem.CalculateOnIntegrationPoints(
                     KratosMultiphysics.PK2_STRESS_VECTOR, mp.ProcessInfo)
                 for s in stresses:
-                    all_s11.append(s[0])   # index 0 = S11 = local axis 1 = warp direction
+                    all_s11.append(s[0])
 
     analysis.Finalize()
 
-    # ------------------------------------------------------------------
-    # Smooth (p-norm) approximation of "the maximum stress anywhere in the
-    # mesh", instead of a hard max().
-    #
-    # Why this matters: with ~1000 elements x a few Gauss points each, WHICH
-    # single Gauss point holds the current maximum can swap as the load
-    # changes by an infinitesimally small amount (two regions of the membrane
-    # can have very close peak stresses, and their ranking flips as load
-    # increases). A hard max() is then technically discontinuous at that
-    # crossover: the reported value jumps instead of varying smoothly, even
-    # though the underlying physical stress FIELD itself is perfectly smooth.
-    # FORM's finite-difference gradient estimation assumes local smoothness,
-    # so this kink was corrupting the search (see module docstring).
-    #
-    # The p-norm ||s||_p = (sum(s_i^p))^(1/p) converges to max(s) as p -> inf,
-    # while staying differentiable everywhere for finite p. We normalize by
-    # the hard max first (ratios = s / max(s), all <= 1) purely for numerical
-    # stability - without it, s_i^30 would overflow float64 for s_i ~ 1e7-1e8
-    # ------------------------------------------------------------------
     all_s11 = np.array(all_s11)
     hard_max = np.max(all_s11)
-    # Increase p from 30.0 to 100.0 in the effort of bringing hard_max and soft_max closer together
     p = 100.0
     ratios = all_s11 / hard_max
     smooth_max = hard_max * np.sum(np.clip(ratios, 0.0, None) ** p) ** (1.0 / p)
-    # Check the smooth_max function
-    # print(f"    hard_max={hard_max*THICKNESS/1000:.4f}  smooth_max={smooth_max*THICKNESS/1000:.4f}")
-    return smooth_max * THICKNESS / 1000.0  # Pa -> kN/m
+    return smooth_max * THICKNESS / 1000.0
 
 
 _CALL_COUNT = [0]  # plain list so the closure below can mutate it (no `nonlocal` needed)
 
 
-def t_S_kratos_nonlinear(L):
+def t_S_kratos_linear(L_snow, L_wind=0.0):
     """
     The structural-response function - this is syst_7's analog of syst_4's
     t_S(l_1, l_2). Takes a snow load L [kN/m^2] and returns the resulting max
@@ -402,22 +396,21 @@ def t_S_kratos_nonlinear(L):
     what a problematic trace looks like: repeated near-identical L values
     with inconsistent e, or L drifting to physically extreme values).
     """
-    scalar_in = (np.ndim(L) == 0)
-    L_arr = np.atleast_1d(np.asarray(L, dtype=float))
-    out = np.empty_like(L_arr)
-    for i, Lv in enumerate(L_arr):
+    scalar_in = (np.ndim(L_snow) == 0) and (np.ndim(L_wind) == 0)
+    L_snow_arr = np.atleast_1d(np.asarray(L_snow, dtype=float))
+    L_wind_arr = np.atleast_1d(np.asarray(L_wind, dtype=float))
+    L_snow_arr, L_wind_arr = np.broadcast_arrays(L_snow_arr, L_wind_arr)
+    out = np.empty(L_snow_arr.shape[0])
+    for i in range(L_snow_arr.shape[0]):
         _CALL_COUNT[0] += 1
-        # NOTE: this float(Lv) conversion is also what makes autograd fail
-        # cleanly (TypeError) if FORM_HLRF tries automatic differentiation
-        # first, correctly forcing it to fall back to finite differences -
-        # see GUIDE.md gotcha #10. Don't remove it thinking it's redundant.
-        val = _run_static_kratos_nonlinear(float(Lv))
+        val = _run_static_kratos_linear(float(L_snow_arr[i]), float(L_wind_arr[i]))
         out[i] = val
-        print(f"  [call {_CALL_COUNT[0]:4d}] L={Lv:9.4f} kN/m^2  ->  e={val:9.4f} kN/m", flush=True)
+        print(f"  [call {_CALL_COUNT[0]:4d}] L_snow={L_snow_arr[i]:9.4f}  L_wind={L_wind_arr[i]:9.4f} kN/m^2  ->  e={val:9.4f} kN/m", flush=True)
     return out[0] if scalar_in else out
 
 
-def t_S_kratos_linear(L):
+
+def t_S_kratos_nonlinear(L_snow, L_wind=0.0):
     """
     The structural-response function - this is syst_7's analog of syst_4's
     t_S(l_1, l_2). Takes a snow load L [kN/m^2] and returns the resulting max
@@ -441,31 +434,31 @@ def t_S_kratos_linear(L):
     what a problematic trace looks like: repeated near-identical L values
     with inconsistent e, or L drifting to physically extreme values).
     """
-    scalar_in = (np.ndim(L) == 0)
-    L_arr = np.atleast_1d(np.asarray(L, dtype=float))
-    out = np.empty_like(L_arr)
-    for i, Lv in enumerate(L_arr):
+    scalar_in = (np.ndim(L_snow) == 0) and (np.ndim(L_wind) == 0)
+    L_snow_arr = np.atleast_1d(np.asarray(L_snow, dtype=float))
+    L_wind_arr = np.atleast_1d(np.asarray(L_wind, dtype=float))
+    L_snow_arr, L_wind_arr = np.broadcast_arrays(L_snow_arr, L_wind_arr)
+    out = np.empty(L_snow_arr.shape[0])
+    for i in range(L_snow_arr.shape[0]):
         _CALL_COUNT[0] += 1
-        # NOTE: this float(Lv) conversion is also what makes autograd fail
-        # cleanly (TypeError) if FORM_HLRF tries automatic differentiation
-        # first, correctly forcing it to fall back to finite differences -
-        # see GUIDE.md gotcha #10. Don't remove it thinking it's redundant.
-        val = _run_static_kratos_linear(float(Lv))
+        val = _run_static_kratos_nonlinear(float(L_snow_arr[i]), float(L_wind_arr[i]))
         out[i] = val
-        print(f"  [call {_CALL_COUNT[0]:4d}] L={Lv:9.4f} kN/m^2  ->  e={val:9.4f} kN/m", flush=True)
+        print(f"  [call {_CALL_COUNT[0]:4d}] L_snow={L_snow_arr[i]:9.4f}  L_wind={L_wind_arr[i]:9.4f} kN/m^2  ->  e={val:9.4f} kN/m", flush=True)
     return out[0] if scalar_in else out
+
+
 
 
 if __name__ == "__main__":
-    print("===Test Phase by Jo===")
+    print("===Test Phase===")
     
-    def kappa_1(l_1k, l_1d, t_S):
-        numerator = (t_S(L=l_1d) - t_S(L=l_1k)) * l_1k
-        denominator = (t_S(L=l_1k) - t_S(L=0.0)) * (l_1d-l_1k)
-        return numerator / denominator
+    # def kappa_1(l_1k, l_1d, t_S):
+    #     numerator = (t_S(l_1d) - t_S(l_1k)) * l_1k
+    #     denominator = (t_S(l_1k) - t_S(0.0)) * (l_1d-l_1k)
+    #     return numerator / denominator
     
-    k1 = kappa_1(l_1k=0.6,  l_1d=0.9, t_S=t_S_kratos_nonlinear)
-    print(f"kappa_1: {k1}")
+    # k1 = kappa_1(l_1k=0.6,  l_1d=0.9, t_S=t_S_kratos_nonlinear)
+    # print(f"kappa_1: {k1}")
     
     # def y0(l_k, t_S):
     #     return t_S(l_k) / t_S(0.0)
@@ -473,13 +466,13 @@ if __name__ == "__main__":
     # y0 = y0(l_k=0.6, t_S=t_S_kratos_nonlinear)
     # print(f"y0: {y0}")
     
-    # N_lin = t_S_kratos_linear(0.9)
-    # print(f"\nN = {N_lin}")
+    N_lin = t_S_kratos_linear(L_snow=0.6,L_wind=0.3)
+    print(f"\nN = {N_lin}")
     
-    # N_nonl = t_S_kratos_nonlinear(0.9)
-    # print(f"\nN = {N_nonl}")
+    N_nonl = t_S_kratos_nonlinear(L_snow=0.6,L_wind=0.3)
+    print(f"\nN = {N_nonl}")
     
-    # print(f"Difference: {N_nonl-N_lin}")
+    print(f"Difference: {N_nonl-N_lin}")
 
     # # ------------------------------------------------------------------
     # # Random variables - Fusseder et al. 2021

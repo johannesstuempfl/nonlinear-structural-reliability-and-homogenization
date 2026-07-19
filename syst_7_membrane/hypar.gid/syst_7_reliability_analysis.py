@@ -45,7 +45,7 @@ mu_L1, cov_L1 = 0.34, 0.3
 L1_dist = ERADist('gumbel', 'MOM', [mu_L1, mu_L1 * cov_L1])
 
 # Wind Load kN/m^2 -> REPLACE WITH ACTUAL DISTRIBUTION LATER; RIGHT NOW ONLY DUMMY DATA
-mu_L2, cov_L2 = 0.2, 0.3
+mu_L2, cov_L2 = 0.5, 0.3
 L2_dist = ERADist('gumbel', 'MOM', [mu_L2, mu_L2 * cov_L2])
 
 # membrane tensile strength kN/m
@@ -54,7 +54,7 @@ M_dist = ERADist('lognormal', 'MOM', [mu_M, mu_M * cov_M])    # membrane tensile
 
 # ---------------------------------------------------------------------------------------
 # Construction of the Nataf Distribution
-marginal_dist = [M_dist, L1_dist]
+marginal_dist = [M_dist, L1_dist, L2_dist]
 nataf = ERANataf(M=marginal_dist, Correlation=np.eye(len(marginal_dist)))
 
 # ---------------------------------------------------------------------------------------
@@ -122,19 +122,20 @@ print("\n=== FORM (HLRF) - Design option (a) ===")
 u_star_1, x_star_1, beta_1, Pf_1, _, _ = FORM_HLRF(
     g=g_opt1, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
 
-print("\n=== FORM (HLRF) - Design option (b) ===")
-u_star_2, x_star_2, beta_2, Pf_2, _, _ = FORM_HLRF(
-    g=g_opt2, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
+# print("\n=== FORM (HLRF) - Design option (b) ===")
+# u_star_2, x_star_2, beta_2, Pf_2, _, _ = FORM_HLRF(
+#     g=g_opt2, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
 
 print("\n\n=== SUMMARY ===")
 print("\nDesign option (1)")
 print(f"beta = {beta_1:.3f}") # paper: 4.96
 print(f"x_star_1 = {x_star_1}")
+print(f"alpha_1 = {u_star_1/beta_1}")
 
-print("\n\nDesign option (2)")
-print(f"beta = {beta_2:.3f}") # paper: 5.56
-print(f"x_star_2 = {x_star_2}")
-
+# print("\n\nDesign option (2)")
+# print(f"beta = {beta_2:.3f}") # paper: 5.56
+# print(f"x_star_2 = {x_star_2}")
+# print(f"alpha_2 = {u_star_2/beta_2}")
 
 # ---------------------------------------------------------------------------------------
 # Safety Homogenization with additional PSF gamma_new

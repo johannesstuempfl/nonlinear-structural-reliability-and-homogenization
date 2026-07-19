@@ -59,6 +59,15 @@ candidates_4n = [
     "ShellThinElement3D4N",
     "ShellThickElement3D4N",
 ]
+candidates_2n = [
+    "CableElement3D2N",                 # known-good control case - already used for the hypar's boundary cables
+    "TrussElement3D2N",
+    "TrussLinearElement3D2N",
+    "CrBeamElement3D2N",
+    "CrLinearBeamElement3D2N",
+    "GeometricallyNonlinearTrussElement3D2N",
+    "TimoshenkoBeamElement3D2N",
+]
 
 eid = 1
 for name in candidates_3n:
@@ -72,6 +81,15 @@ for name in candidates_3n:
 for name in candidates_4n:
     try:
         mp2.CreateNewElement(name, eid, [1, 2, 3, 4], props2)
+        print(f"  {name:35s} EXISTS (created OK)")
+    except Exception as e:
+        print(f"  {name:35s} not available: {e}".splitlines()[0])
+    eid += 1
+
+print("\n=== Trying 2-node (truss/cable/beam) candidates ===")
+for name in candidates_2n:
+    try:
+        mp2.CreateNewElement(name, eid, [1, 2], props2)
         print(f"  {name:35s} EXISTS (created OK)")
     except Exception as e:
         print(f"  {name:35s} not available: {e}".splitlines()[0])

@@ -38,18 +38,20 @@ KratosMultiphysics.Logger.GetDefaultOutput().SetSeverity(KratosMultiphysics.Logg
 # only things that vary per t_S_tripod(...) call)
 # ============================================================================
 # ANCHOR_COORDS = [
-#     (0.0, -3.0,  0.0),
-#     (0.0,  3.0,  0.0),
-#     (0.0,  0.0, -6.0),
+#     (0.0,  0.0,  0.0),
+#     (6.0,  0.0,  0.0),
+#     (6.0,  0.0, -6.0),
 # ]
-# COMMON_COORD = (0.0, 0.0, -0.2)
+# COMMON_COORD = (3.0, 0.0, -0.0)
 
+# Test: 4 cable system:
 ANCHOR_COORDS = [
     (0.0,  0.0,  0.0),
     (6.0,  0.0,  0.0),
-    #(3.0,  0.0, -10.0),
+    (6.0,  0.0, -0.2),
+    (0.0,  0.0, -0.2),
 ]
-COMMON_COORD = (3.0, 0.0, -0.0)
+COMMON_COORD = (3.0, 0.0, -0.1)
 
 # Section/material - reusing the same steel cable properties already used for
 # the hypar's boundary cables (12 mm diameter round steel bar).
@@ -164,7 +166,7 @@ def t_S_cablenet(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
     # and contributes it to the system during assembly (properties content
     # doesn't matter here, this condition type ignores material data).
     mp.CreateNewCondition("PointLoadCondition3D1N", 100, [common_id], props)
-
+    
     analysis.Initialize()
 
     for step in range(N_STEPS):
@@ -189,12 +191,9 @@ def t_S_cablenet(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
     elem2 = mp.GetElement(2)
     stresses = elem2.CalculateOnIntegrationPoints(KratosMultiphysics.PK2_STRESS_VECTOR, mp.ProcessInfo)
     stress_pa = stresses[0][0]
+    
 
     analysis.Finalize()
 
     return stress_pa /1e6 # output in MPa, not Pa
 
-
-if __name__ == "__main__":
-    stress = t_S_cablenet(F_Y=10e3, F_Z=-10000.0)
-    print(f"\nCable 2 stress: {stress/1e6:.3f} MPa")

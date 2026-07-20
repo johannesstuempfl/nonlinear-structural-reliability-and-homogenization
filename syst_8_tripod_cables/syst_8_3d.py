@@ -1,4 +1,4 @@
-from syst_8_model_function import t_S_cablenet
+from syst_8_model_functions import t_S_cablenet_nonlinear, t_S_cablenet_linear
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -25,7 +25,7 @@ for i in range(len(Fy_range)):
             Fy_val = Fy_mesh[i, j]
             Fz_val = Fz_mesh[i, j]
             
-            sigma = t_S_cablenet(-Fy_val, -Fz_val)
+            sigma = t_S_cablenet_nonlinear(-Fy_val, -Fz_val)
             
             sigma_mesh[i, j] = sigma
             
@@ -50,12 +50,12 @@ ax1.view_init(elev=15, azim=210)
 
 # Subplot 2: Contour plot (keeping your existing logic)
 ax2 = fig1.add_subplot(122)
-contour = ax2.contourf(Fy_mesh, Fz_mesh, sigma_mesh, levels=20, cmap='viridis')
+contour = ax2.contourf(Fy_mesh/1000, Fz_mesh/1000, sigma_mesh, levels=20, cmap='viridis')
 ax2.set_xlabel('Fz [kN]')
 ax2.set_ylabel('Fy [kN]')
 ax2.set_title('sigma [MPa]', fontsize=12, fontweight='bold')
 fig1.colorbar(contour, ax=ax2, label='sigma [MPa]')
-plt.savefig("./3D_plot_surface", dpi=300)
+plt.savefig("./syst_8_tripod_cables/plots/3D_plot_surface", dpi=300)
 plt.tight_layout()
 
 
@@ -85,5 +85,5 @@ ax4.grid(True, linestyle='--', alpha=0.6)
 ax4.legend(fontsize='small')
 
 plt.tight_layout()
-plt.savefig("./3D_plot_sections", dpi=300)
+plt.savefig("./syst_8_tripod_cables/plots/3D_plot_sections", dpi=300)
 plt.show()

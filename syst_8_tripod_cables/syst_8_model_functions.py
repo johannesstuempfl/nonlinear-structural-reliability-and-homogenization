@@ -25,6 +25,7 @@ Run with (from the project root, inside Docker):
 """
 import sys
 import json
+import numpy as np
 import KratosMultiphysics
 import KratosMultiphysics.StructuralMechanicsApplication as sma
 from KratosMultiphysics.StructuralMechanicsApplication.structural_mechanics_analysis import StructuralMechanicsAnalysis
@@ -33,42 +34,43 @@ sys.path.insert(0, "/workspace")
 
 KratosMultiphysics.Logger.GetDefaultOutput().SetSeverity(KratosMultiphysics.Logger.Severity.WARNING)
 
-# ============================================================================
-# EDIT THESE - geometry, section/material, prestress (fixed; F_Y/F_Z are the
-# only things that vary per t_S_tripod(...) call)
-# ============================================================================
+
+# # 4 cable system
 # ANCHOR_COORDS = [
 #     (0.0,  0.0,  0.0),
 #     (6.0,  0.0,  0.0),
-#     (6.0,  0.0, -6.0),
+#     (6.0,  0.0, -0.2),
+#     (0.0,  0.0, -0.2),
 # ]
-# COMMON_COORD = (3.0, 0.0, -0.0)
+# COMMON_COORD = (3.0, 0.0, -0.1)
 
-# Test: 4 cable system:
+# Test: 8 cable system
 ANCHOR_COORDS = [
     (0.0,  0.0,  0.0),
     (6.0,  0.0,  0.0),
     (6.0,  0.0, -0.2),
     (0.0,  0.0, -0.2),
+    (0.0,  0.1,  0.0),
+    (6.0,  0.1,  0.0),
+    (6.0,  0.1, -0.2),
+    (0.0,  0.1, -0.2),
 ]
-COMMON_COORD = (3.0, 0.0, -0.1)
+COMMON_COORD = (3.0, 0.05, -0.1)
 
 # Section/material - reusing the same steel cable properties already used for
 # the hypar's boundary cables (12 mm diameter round steel bar).
-CROSS_AREA = 0.000113097     # m^2
-YOUNG_MODULUS = 205e9        # Pa
-DENSITY = 7850.0             # kg/m^3
+DIAMETER = 0.012 # m
+CROSS_AREA = DIAMETER**2 * np.pi / 4    # m^2
+YOUNG_MODULUS = 205e9                   # Pa
+DENSITY = 7850.0                        # kg/m^3
 
-# TrussConstitutiveLaw's actual prestress variable is TRUSS_PRESTRESS_PK2 (a
-# true stress in Pa) - NOT PRESTRESS_VECTOR, which is vestigial/unused by
-# this law (see GUIDE.md). Prestress FORCE = TRUSS_PRESTRESS_PK2 * CROSS_AREA.
+# Prestress FORCE = TRUSS_PRESTRESS_PK2 * CROSS_AREA.
 PRESTRESS_PK2 = 265258238.5  # Pa
 
-N_STEPS = 20
 # ============================================================================
 
 
-def t_S_cablenet(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
+def t_S_cablenet_nonlinear(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
     """
     Builds the cable structure fresh, ramps [0, F_Y, F_Z] onto the common node over
     N_STEPS substeps (same reasoning as syst_7_membrane: a geometrically
@@ -82,7 +84,9 @@ def t_S_cablenet(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
     model = KratosMultiphysics.Model()
     mp = model.CreateModelPart("Structure")
     mp.ProcessInfo[KratosMultiphysics.DOMAIN_SIZE] = 3
-
+    
+    N_STEPS = 20
+    
     params_dict = {
         "problem_data": {
             "problem_name": "cablenet",
@@ -188,12 +192,144 @@ def t_S_cablenet(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
           f"common node displacement: dx={disp[0]:.6e}  dy={disp[1]:.6e}  dz={disp[2]:.6e}  m",
           flush=True)
 
-    elem2 = mp.GetElement(2)
-    stresses = elem2.CalculateOnIntegrationPoints(KratosMultiphysics.PK2_STRESS_VECTOR, mp.ProcessInfo)
+    # elem2 = mp.GetElement(2)
+    # stresses = elem2.CalculateOnIntegrationPoints(KratosMultiphysics.PK2_STRESS_VECTOR, mp.ProcessInfo)
+    # stress_pa = stresses[0][0]
+    
+    # Test: 8 cable system
+    elem5 = mp.GetElement(5)
+    stresses = elem5.CalculateOnIntegrationPoints(KratosMultiphysics.PK2_STRESS_VECTOR, mp.ProcessInfo)
+    stress_pa = stresses[0][0]
+
+    analysis.Finalize()
+
+    return stress_pa /1e6 # output in MPa, not Pa
+
+
+
+def t_S_cablenet_linear(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
+    """
+    Docstring to be written 
+    """
+    model = KratosMultiphysics.Model()
+    mp = model.CreateModelPart("Structure")
+    mp.ProcessInfo[KratosMultiphysics.DOMAIN_SIZE] = 3
+    
+    N_STEPS = 1
+
+    params_dict = {
+        "problem_data": {
+            "problem_name": "cablenet",
+            "parallel_type": "OpenMP",
+            "echo_level": 0,
+            "start_time": 0.0,
+            "end_time": 1.0
+        },
+        "solver_settings": {
+            "solver_type": "static",
+            "model_part_name": "Structure",
+            "domain_size": 3,
+            "echo_level": 0,
+            "analysis_type": "linear",
+            "model_import_settings": {
+                "input_type": "use_input_model_part"
+            },
+            "time_stepping": {"time_step": 1.0 / N_STEPS},
+            "line_search": False,
+            "convergence_criterion": "residual_criterion",
+            "displacement_relative_tolerance": 1e-4,
+            "displacement_absolute_tolerance": 1e-8,
+            "residual_relative_tolerance": 1e-4,
+            "residual_absolute_tolerance": 1e-8,
+            "max_iteration": 50,
+            "rotation_dofs": False,
+            "volumetric_strain_dofs": False
+        },
+        "processes": {
+            "constraints_process_list": [],
+            "loads_process_list": [],
+            "list_other_processes": []
+        },
+        "output_processes": {}
+    }
+
+    parameters = KratosMultiphysics.Parameters(json.dumps(params_dict))
+    analysis = StructuralMechanicsAnalysis(model, parameters)
+
+    # Nodes: anchors get ids 1..N, the common node gets the next id. Must be
+    # created AFTER the analysis object above (that's what registers
+    # DISPLACEMENT/REACTION/POINT_LOAD/etc. on the model part) and BEFORE
+    # analysis.Initialize() below.
+    for i, (x, y, z) in enumerate(ANCHOR_COORDS, start=1):
+        mp.CreateNewNode(i, x, y, z)
+    common_id = len(ANCHOR_COORDS) + 1
+    common_node = mp.CreateNewNode(common_id, *COMMON_COORD)
+
+    for node in mp.Nodes:
+        node.AddDof(KratosMultiphysics.DISPLACEMENT_X, KratosMultiphysics.REACTION_X)
+        node.AddDof(KratosMultiphysics.DISPLACEMENT_Y, KratosMultiphysics.REACTION_Y)
+        node.AddDof(KratosMultiphysics.DISPLACEMENT_Z, KratosMultiphysics.REACTION_Z)
+
+    # One shared Properties object for all 3 cables (identical prestress/
+    # section here). Give each cable its own Properties(id) instead if you
+    # want different prestress or section per member.
+    props = mp.GetProperties()[1]
+    props.SetValue(KratosMultiphysics.CONSTITUTIVE_LAW, sma.TrussConstitutiveLaw())
+    props.SetValue(sma.CROSS_AREA, CROSS_AREA)
+    props.SetValue(KratosMultiphysics.YOUNG_MODULUS, YOUNG_MODULUS)
+    props.SetValue(KratosMultiphysics.DENSITY, DENSITY)
+    props.SetValue(sma.TRUSS_PRESTRESS_PK2, PRESTRESS_PK2)
+
+    # Fix all 3 anchors fully; the common node stays free
+    for i in range(1, len(ANCHOR_COORDS) + 1):
+        node = mp.Nodes[i]
+        node.Fix(KratosMultiphysics.DISPLACEMENT_X)
+        node.Fix(KratosMultiphysics.DISPLACEMENT_Y)
+        node.Fix(KratosMultiphysics.DISPLACEMENT_Z)
+    # No X load is ever applied and every node lives at X=0, so nothing would
+    # ever move the common node in X - fixing it there too keeps the system
+    # well-posed without changing the Y-Z physics you actually care about.
+    common_node.Fix(KratosMultiphysics.DISPLACEMENT_X)
+
+    # 4 TrussLinearElement3D2N. Unlike CableElement3D2N,
+    # this element can carry compression - no more tension-only/slack behavior.
+    for i in range(1, len(ANCHOR_COORDS) + 1):
+        mp.CreateNewElement("TrussLinearElement3D2N", i, [i, common_id], props)
+
+
+    mp.CreateNewCondition("PointLoadCondition3D1N", 100, [common_id], props)
+    
+    analysis.Initialize()
+
+    for step in range(N_STEPS):
+        analysis.time = analysis._AdvanceTime()
+        t_frac = (step + 1) / N_STEPS
+        common_node.SetSolutionStepValue(sma.POINT_LOAD, [0.0, t_frac * F_Y, t_frac * F_Z])
+    
+        
+        analysis.InitializeSolutionStep()
+        converged = analysis._GetSolver().SolveSolutionStep()
+        analysis.FinalizeSolutionStep()
+
+        if not converged:
+            print(f"    !! non-convergence at step {step + 1}/{N_STEPS} "
+                  f"(F_Y={t_frac * F_Y:.1f} N, F_Z={t_frac * F_Z:.1f} N)", flush=True)
+
+    disp = common_node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT)
+    print(f"  t_S_tripod(F_Y={F_Y:.1f}, F_Z={F_Z:.1f})  ->  "
+          f"common node displacement: dx={disp[0]:.6e}  dy={disp[1]:.6e}  dz={disp[2]:.6e}  m",
+          flush=True)
+
+    # elem2 = mp.GetElement(2)
+    # stresses = elem2.CalculateOnIntegrationPoints(KratosMultiphysics.PK2_STRESS_VECTOR, mp.ProcessInfo)
+    # stress_pa = stresses[0][0]
+    
+    # Test: 8 cable system
+    elem5 = mp.GetElement(5)
+    stresses = elem5.CalculateOnIntegrationPoints(KratosMultiphysics.PK2_STRESS_VECTOR, mp.ProcessInfo)
     stress_pa = stresses[0][0]
     
 
     analysis.Finalize()
 
     return stress_pa /1e6 # output in MPa, not Pa
-

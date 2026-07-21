@@ -39,7 +39,7 @@ ax1 = fig1.add_subplot(121, projection='3d')
 
 
 # Plotting Theory 3 Surface
-surf2 = ax1.plot_surface(Fy_mesh, Fz_mesh, sigma_mesh, cmap='viridis', 
+surf2 = ax1.plot_surface(Fy_mesh/1000, Fz_mesh/1000, sigma_mesh, cmap='viridis', 
                          edgecolor='none', alpha=0.7, label='sigma')
 
 ax1.set_xlabel('Fz [kN]')

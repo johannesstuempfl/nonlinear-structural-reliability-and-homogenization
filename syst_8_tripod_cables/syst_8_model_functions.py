@@ -176,7 +176,8 @@ def t_S_cablenet_nonlinear(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
     for step in range(N_STEPS):
         analysis.time = analysis._AdvanceTime()
         t_frac = (step + 1) / N_STEPS
-        common_node.SetSolutionStepValue(sma.POINT_LOAD, [0.0, t_frac * F_Y, t_frac * F_Z])
+        # !! Important: Here, Fy is set negative y-direction and Fz as well with the - sign!!
+        common_node.SetSolutionStepValue(sma.POINT_LOAD, [0.0, - t_frac * F_Y, - t_frac * F_Z])
     
         
         analysis.InitializeSolutionStep()
@@ -304,7 +305,8 @@ def t_S_cablenet_linear(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
     for step in range(N_STEPS):
         analysis.time = analysis._AdvanceTime()
         t_frac = (step + 1) / N_STEPS
-        common_node.SetSolutionStepValue(sma.POINT_LOAD, [0.0, t_frac * F_Y, t_frac * F_Z])
+        # !! Important: Here, Fy is set negative y-direction and Fz as well with the - sign!!
+        common_node.SetSolutionStepValue(sma.POINT_LOAD, [0.0, - t_frac * F_Y, - t_frac * F_Z])
     
         
         analysis.InitializeSolutionStep()

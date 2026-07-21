@@ -1,10 +1,9 @@
 from syst_8_model_functions import t_S_cablenet_linear, t_S_cablenet_nonlinear
 from syst_8_measures_of_nonlinearity import y0, kappa_1, kappa_2, kappa_12, r1, r2
 
-sigma_Rd = 1500 # MPa
+sigma_Rd = 1601.7305471 # MPa
 
 e = 35 # arbitrary load distribution area in m2 (chosen for calibration of design parameter p)
-
 
 s_k = 1.1  # snow kN/m2 (in negative z-direction)
 q_b = 0.65 # wind pressure kN/m2 (in negative y-direction)
@@ -38,13 +37,15 @@ argument_1 = gamma_F1 * t_S_cablenet_nonlinear(l_1k,  (gamma_F2 / gamma_F1) * l_
 argument_2 = gamma_F2 * t_S_cablenet_nonlinear((gamma_F1 / gamma_F2) * l_1k, l_2k)
 sigma_Ed_2 = max(argument_1,argument_2)
 
+sigma_Ed_linear = t_S_cablenet_linear(l_1d, l_2d)
 
-print("Design Option 1:")
-print(f"sigma = {sigma_Ed_1}")
 
-print("Design Option 2:")
-print(f"sigma = {sigma_Ed_2}")
+print(f"\n")
+print("================================")
+print("SUMMARY")
+print("================================")
 
+print(f"\n")
 print(f"y0 = {y0}")
 print(f"kappa1 = {k1}")
 print(f"kappa2 = {k2}")
@@ -52,15 +53,23 @@ print(f"kappa12 = {k12}")
 print(f"r1 = {r1}")
 print(f"r2 = {r2}")
 
-print(f"l1k = {l_1k}")
-print(f"l1d = {l_1d}")
-print(f"l2k = {l_2k}")
-print(f"l2d = {l_2d}")
-print(f"sigma_Rd = {sigma_Rd}")
-print("Design Option 1:")
-print(f"sigma = {sigma_Ed_1}")
-print(f"eta = {sigma_Ed_1/sigma_Rd}")
+print(f"\n")
+print(f"l1k = {l_1k / 1000} kN")
+print(f"l1d = {l_1d/ 1000} kN")
+print(f"l2k = {l_2k/ 1000} kN")
+print(f"l2d = {l_2d/ 1000} kN")
+print(f"sigma_Rd = {sigma_Rd} MPa")
 
+print(f"\n")
+print("Design Option 1:")
+print(f"sigma = {sigma_Ed_1} MPa")
+print(f"eta = {sigma_Ed_1/sigma_Rd}")
+print(f"\n")
 print("Design Option 2:")
-print(f"sigma = {sigma_Ed_2}")
+print(f"sigma = {sigma_Ed_2} MPa")
 print(f"eta = {sigma_Ed_2/sigma_Rd}")
+
+print(f"\n")
+print("Linear Reference:")
+print(f"sigma = {sigma_Ed_linear} MPa")
+print(f"eta = {sigma_Ed_linear/sigma_Rd}")

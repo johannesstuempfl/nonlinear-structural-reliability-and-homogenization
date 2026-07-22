@@ -44,18 +44,31 @@ KratosMultiphysics.Logger.GetDefaultOutput().SetSeverity(KratosMultiphysics.Logg
 # ]
 # COMMON_COORD = (3.0, 0.0, -0.1)
 
-# Test: 8 cable system
+# # Test: 8 cable system
+# ANCHOR_COORDS = [
+#     (0.0,  0.0,  0.0),
+#     (6.0,  0.0,  0.0),
+#     (6.0,  0.0, -0.2),
+#     (0.0,  0.0, -0.2),
+#     (0.0,  0.1,  0.0),
+#     (6.0,  0.1,  0.0),
+#     (6.0,  0.1, -0.2),
+#     (0.0,  0.1, -0.2),
+# ]
+# COMMON_COORD = (3.0, 0.05, -0.1)
+
+# Updated to suit nonlinearity characteristics
 ANCHOR_COORDS = [
     (0.0,  0.0,  0.0),
     (6.0,  0.0,  0.0),
     (6.0,  0.0, -0.2),
     (0.0,  0.0, -0.2),
-    (0.0,  0.1,  0.0),
-    (6.0,  0.1,  0.0),
-    (6.0,  0.1, -0.2),
-    (0.0,  0.1, -0.2),
+    (0.0,  0.2,  0.0),
+    (6.0,  0.2,  0.0),
+    (6.0,  0.2, -0.2),
+    (0.0,  0.2, -0.2),
 ]
-COMMON_COORD = (3.0, 0.05, -0.1)
+COMMON_COORD = (3.0, 0.1, -0.1)
 
 # Section/material - reusing the same steel cable properties already used for
 # the hypar's boundary cables (12 mm diameter round steel bar).
@@ -67,12 +80,15 @@ DENSITY = 7850.0                        # kg/m^3
 # Prestress in Pa
 # PRESTRESS_PK2 = 265258238.5  # (deprecated) corresponds to 30 kN 
 PRESTRESS_PK2 = 176838825.7 # corresponds to 20 kN 
+
+# arbitrary load distribution area in m2 (chosen for calibration of design parameter p)
+E = 18
 # ============================================================================
 
 
 def t_S_cablenet_nonlinear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
     """
-    Takes in single loads F_Z and F_Y in kN. 
+    Takes in single loads F_Z and F_Y in kN/m2. 
     F_Z points in negative z-direction (downwards).
     F_Y points in negative y-direction.
     Returns stress of cable no. 5 in MPa.
@@ -81,6 +97,9 @@ def t_S_cablenet_nonlinear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
     model = KratosMultiphysics.Model()
     mp = model.CreateModelPart("Structure")
     mp.ProcessInfo[KratosMultiphysics.DOMAIN_SIZE] = 3
+    
+    F_Y *= E # conversion kN/m2 to kN with load distribution area
+    F_Z *= E # conversion kN/m2 to kN with load distribution area
     
     F_Y *= 1000 # conversion from kN to N 
     F_Z *= 1000 # conversion from kN to N 
@@ -189,9 +208,11 @@ def t_S_cablenet_nonlinear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
                   f"(F_Y={t_frac * F_Y:.1f} N, F_Z={t_frac * F_Z:.1f} N)", flush=True)
 
     disp = common_node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT)
-    print(f"  t_S_tripod(F_Y={F_Y:.1f}, F_Z={F_Z:.1f})  ->  "
-          f"common node displacement: dx={disp[0]:.6e}  dy={disp[1]:.6e}  dz={disp[2]:.6e}  m",
-          flush=True)
+    
+    # Remove this comment to print displacements and loads at each step
+    # print(f"  t_S_tripod(F_Y={F_Y:.1f}, F_Z={F_Z:.1f})  ->  "
+    #       f"common node displacement: dx={disp[0]:.6e}  dy={disp[1]:.6e}  dz={disp[2]:.6e}  m",
+    #       flush=True)
 
     # elem2 = mp.GetElement(2)
     # stresses = elem2.CalculateOnIntegrationPoints(KratosMultiphysics.PK2_STRESS_VECTOR, mp.ProcessInfo)
@@ -220,6 +241,9 @@ def t_S_cablenet_linear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
     mp = model.CreateModelPart("Structure")
     mp.ProcessInfo[KratosMultiphysics.DOMAIN_SIZE] = 3
 
+    F_Y *= E # conversion kN/m2 to kN with load distribution area
+    F_Z *= E # conversion kN/m2 to kN with load distribution area
+    
     F_Y *= 1000 # conversion from kN to N 
     F_Z *= 1000 # conversion from kN to N 
     
@@ -325,9 +349,11 @@ def t_S_cablenet_linear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
                   f"(F_Y={t_frac * F_Y:.1f} N, F_Z={t_frac * F_Z:.1f} N)", flush=True)
 
     disp = common_node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT)
-    print(f"  t_S_tripod(F_Y={F_Y:.1f}, F_Z={F_Z:.1f})  ->  "
-          f"common node displacement: dx={disp[0]:.6e}  dy={disp[1]:.6e}  dz={disp[2]:.6e}  m",
-          flush=True)
+    
+    # Remove this comment to print displacements and loads at each step
+    # print(f"  t_S_tripod(F_Y={F_Y:.1f}, F_Z={F_Z:.1f})  ->  "
+    #       f"common node displacement: dx={disp[0]:.6e}  dy={disp[1]:.6e}  dz={disp[2]:.6e}  m",
+    #       flush=True)
 
     # elem2 = mp.GetElement(2)
     # stresses = elem2.CalculateOnIntegrationPoints(KratosMultiphysics.PK2_STRESS_VECTOR, mp.ProcessInfo)

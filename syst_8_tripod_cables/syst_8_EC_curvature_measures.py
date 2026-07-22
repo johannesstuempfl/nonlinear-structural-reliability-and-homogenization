@@ -2,20 +2,17 @@ from syst_8_model_functions import t_S_cablenet_linear, t_S_cablenet_nonlinear
 from syst_8_measures_of_nonlinearity import y0, kappa_1, kappa_2, kappa_12, r1, r2
 
 
-# e = 35 # deprecated
-e = 20 # arbitrary load distribution area in m2 (chosen for calibration of design parameter p)
-
 # characteristic tensile strength in MPa 
 #f_u = 1601.7305471 # deprecated
-f_u = 1750.867644440318 # adjusted to eta = 100%
+f_u = 1726.2770986111154 # adjusted to eta = 100% for Design Opt 2
 
 s_k = 1.1  # snow kN/m2 (in negative z-direction)
 q_b = 0.65 # wind pressure kN/m2 (in negative y-direction)
 w_k = q_b  # wind load kN/m2 without c_pe,10. Choice of loads more arbitrary than syst_4
 
 # Characteristic Loads
-l_1k = s_k * e  # kN 
-l_2k = w_k * e  # kN
+l_1k = s_k  # kN 
+l_2k = w_k  # kN
 
 # Partial Safety Factors
 gamma_F1 = 1.5
@@ -60,10 +57,10 @@ print(f"r1 = {r1}")
 print(f"r2 = {r2}")
 
 print(f"\n")
-print(f"l1k = {l_1k} kN")
-print(f"l1d = {l_1d} kN")
-print(f"l2k = {l_2k} kN")
-print(f"l2d = {l_2d} kN")
+print(f"l1k = {l_1k} kN/m2")
+print(f"l1d = {l_1d} kN/m2")
+print(f"l2k = {l_2k} kN/m2")
+print(f"l2d = {l_2d} kN/m2")
 print(f"sigma_Rd = {sigma_Rd} MPa")
 
 print(f"\n")
@@ -79,3 +76,4 @@ print(f"\n")
 print("Linear Reference:")
 print(f"sigma = {sigma_Ed_linear} MPa")
 print(f"eta = {sigma_Ed_linear/sigma_Rd}")
+print(f_u)

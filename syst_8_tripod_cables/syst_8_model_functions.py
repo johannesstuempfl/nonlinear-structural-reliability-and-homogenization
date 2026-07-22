@@ -64,26 +64,26 @@ CROSS_AREA = DIAMETER**2 * np.pi / 4    # m^2
 YOUNG_MODULUS = 205e9                   # Pa
 DENSITY = 7850.0                        # kg/m^3
 
-# Prestress FORCE = TRUSS_PRESTRESS_PK2 * CROSS_AREA.
-PRESTRESS_PK2 = 265258238.5  # Pa
-
+# Prestress in Pa
+# PRESTRESS_PK2 = 265258238.5  # (deprecated) corresponds to 30 kN 
+PRESTRESS_PK2 = 176838825.7 # corresponds to 20 kN 
 # ============================================================================
 
 
-def t_S_cablenet_nonlinear(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
+def t_S_cablenet_nonlinear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
     """
-    Builds the cable structure fresh, ramps [0, F_Y, F_Z] onto the common node over
-    N_STEPS substeps (same reasoning as syst_7_membrane: a geometrically
-    non-linear, tension-only cable system converges far more reliably with
-    small load increments than one big jump), and returns cable element 2's
-    (anchor 2 -> common node) PK2 stress [Pa] at the final step.
-
-    Prints the common node's displacement every call so you can see how the
-    structure is actually deforming, not just the resulting stress number.
+    Takes in single loads F_Z and F_Y in kN. 
+    F_Z points in negative z-direction (downwards).
+    F_Y points in negative y-direction.
+    Returns stress of cable no. 5 in MPa.
+    Geometric nonlinear calculation (TH3).
     """
     model = KratosMultiphysics.Model()
     mp = model.CreateModelPart("Structure")
     mp.ProcessInfo[KratosMultiphysics.DOMAIN_SIZE] = 3
+    
+    F_Y *= 1000 # conversion from kN to N 
+    F_Z *= 1000 # conversion from kN to N 
     
     N_STEPS = 20
     
@@ -208,13 +208,20 @@ def t_S_cablenet_nonlinear(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
 
 
 
-def t_S_cablenet_linear(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
+def t_S_cablenet_linear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
     """
-    Docstring to be written 
+    Takes in single loads F_Z and F_Y in kN. 
+    F_Z points in negative z-direction (downwards).
+    F_Y points in negative y-direction.
+    Returns stress of cable no. 5 in MPa.
+    Linear Calculation (TH1).
     """
     model = KratosMultiphysics.Model()
     mp = model.CreateModelPart("Structure")
     mp.ProcessInfo[KratosMultiphysics.DOMAIN_SIZE] = 3
+
+    F_Y *= 1000 # conversion from kN to N 
+    F_Z *= 1000 # conversion from kN to N 
     
     N_STEPS = 1
 
@@ -307,7 +314,7 @@ def t_S_cablenet_linear(F_Y: float = 0.0, F_Z: float = 0.0) -> float:
         t_frac = (step + 1) / N_STEPS
         # !! Important: Here, Fy is set negative y-direction and Fz as well with the - sign!!
         common_node.SetSolutionStepValue(sma.POINT_LOAD, [0.0, - t_frac * F_Y, - t_frac * F_Z])
-    
+        
         
         analysis.InitializeSolutionStep()
         converged = analysis._GetSolver().SolveSolutionStep()

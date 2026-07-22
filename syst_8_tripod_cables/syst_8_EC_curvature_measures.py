@@ -1,28 +1,34 @@
 from syst_8_model_functions import t_S_cablenet_linear, t_S_cablenet_nonlinear
 from syst_8_measures_of_nonlinearity import y0, kappa_1, kappa_2, kappa_12, r1, r2
 
-sigma_Rd = 1601.7305471 # MPa
 
-e = 35 # arbitrary load distribution area in m2 (chosen for calibration of design parameter p)
+# e = 35 # deprecated
+e = 20 # arbitrary load distribution area in m2 (chosen for calibration of design parameter p)
+
+# characteristic tensile strength in MPa 
+#f_u = 1601.7305471 # deprecated
+f_u = 1750.867644440318 # adjusted to eta = 100%
 
 s_k = 1.1  # snow kN/m2 (in negative z-direction)
 q_b = 0.65 # wind pressure kN/m2 (in negative y-direction)
 w_k = q_b  # wind load kN/m2 without c_pe,10. Choice of loads more arbitrary than syst_4
 
 # Characteristic Loads
-l_1k = s_k * e * 1000 # conversion from kN to N -> * 1000
-l_2k = w_k * e * 1000 # conversion from kN to N -> * 1000
+l_1k = s_k * e  # kN 
+l_2k = w_k * e  # kN
 
 # Partial Safety Factors
 gamma_F1 = 1.5
 gamma_F2 = 1.5
-psi_0 = 1.0 # 0.6     # Windload
+psi_0 = 1.0 # 0.6  # Windload
+gamma_M = 1.5 # Material Side (DIN EN 1993-1-11)
 
 # Design Loads
-l_1d = gamma_F1 * l_1k                    # vertical distributed load
-l_2d = gamma_F2 * psi_0 * l_2k          # horizontal distributed load
+l_1d = gamma_F1 * l_1k                    # vertical distributed load in N
+l_2d = gamma_F2 * psi_0 * l_2k          # horizontal distributed load in N
 
-
+# Design Resistance in MPa
+sigma_Rd = f_u / gamma_M
 
 y0 = y0(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_nonlinear)
 k1 = kappa_1(l_1k=l_1k, l_1d=l_1d, t_S=t_S_cablenet_nonlinear)
@@ -54,10 +60,10 @@ print(f"r1 = {r1}")
 print(f"r2 = {r2}")
 
 print(f"\n")
-print(f"l1k = {l_1k / 1000} kN")
-print(f"l1d = {l_1d/ 1000} kN")
-print(f"l2k = {l_2k/ 1000} kN")
-print(f"l2d = {l_2d/ 1000} kN")
+print(f"l1k = {l_1k} kN")
+print(f"l1d = {l_1d} kN")
+print(f"l2k = {l_2k} kN")
+print(f"l2d = {l_2d} kN")
 print(f"sigma_Rd = {sigma_Rd} MPa")
 
 print(f"\n")

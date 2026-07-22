@@ -7,21 +7,91 @@ from ERA_Distribution_Classes_Python.Classes.ERANataf import ERANataf
 from ERA_Distribution_Classes_Python.Classes.FORM_HLRF import FORM_HLRF
 from ERA_Distribution_Classes_Python.Classes.FORM_fmincon import FORM_fmincon
 
+# ---------------------------------------------------------------------------------------
+# Characteristic Values 
+e = 20 # arbitrary load distribution area in m2 (chosen for calibration of design parameter p)
+
+# characteristic tensile strength in MPa 
+#f_u = 1601.7305471 # deprecated
+f_u = 1711.4064623286197 # adjusted to eta = 100%
+
+s_k = 1.1  # snow kN/m2 (in negative z-direction)
+q_b = 0.65 # wind pressure kN/m2 (in negative y-direction)
+w_k = q_b  # wind load kN/m2 without c_pe,10. Choice of loads more arbitrary than syst_4
+
+# Characteristic Loads
+l_1k = s_k * e  # conversion from kN to N -> * 1000
+l_2k = w_k * e  # conversion from kN to N -> * 1000
 
 # ---------------------------------------------------------------------------------------
 # Random variables
 
-# Snow Load kN/m^2
-mu_L1, cov_L1 = 0.34, 0.3
-L1_dist = ERADist('gumbel', 'MOM', [mu_L1, mu_L1 * cov_L1])
+# Snow time-invariant part $\Theta_{L_{1}}$ (JRC Report)
+mu_Theta_L1 = 0.81
+cov_Theta_L1 = 0.26
+sig_Theta_L1 = mu_Theta_L1 * cov_Theta_L1
+Theta_L1_dist = ERADist('lognormal', 'MOM', [mu_Theta_L1, sig_Theta_L1])
 
-# Wind Load kN/m^2
-mu_L2, cov_L2 = 0.5, 0.3
-L2_dist = ERADist('gumbel', 'MOM', [mu_L2, mu_L2 * cov_L2])
 
-# membrane tensile strength kN/m
-mu_M, cov_M = 1.0, 0.1
-M_dist = ERADist('lognormal', 'MOM', [mu_M, mu_M * cov_M])    # membrane tensile strength
+# Snow load on ground $L_{1}$ in kN/m2 (JRC Report)
+mu_L1 = 1.0
+cov_L1 = 0.2
+sig_L1 = mu_L1 * cov_L1
+L1_dist = ERADist('gumbel', 'MOM', [mu_L1, sig_L1])
+
+
+# Wind time-invariant part $\Theta_{L_{2}}$ (JRC Report)
+mu_Theta_L2 = 0.97
+cov_Theta_L2 = 0.26
+sig_Theta_L2 = mu_Theta_L2 * cov_Theta_L2
+Theta_L2_dist = ERADist('lognormal', 'MOM', [mu_Theta_L2, sig_Theta_L2])
+
+
+# Wind velocity pressure $L_{2}$ in kN/m2 (JRC Report)
+mu_L2 = 1.0
+cov_L2 = 0.14
+sig_L2 = mu_L2 * cov_L2
+L2_dist = ERADist('gumbel', 'MOM', [mu_L2, sig_L2])
+
+
+# Structural Response Model Uncertainty $\Theta_{S}$: axial force in frames (JCSS Part 3, Table 3.9.1)
+mu_Theta_S = 1.0
+cov_Theta_S = 0.05
+sig_Theta_S = mu_Theta_S * cov_Theta_S
+Theta_S_dist = ERADist('lognormal', 'MOM', [mu_Theta_S, sig_Theta_S])
+
+
+# Resistance Model Uncertainty $\Theta_{M}$  for Steel (Köhler et al. Calibration of ...)
+mu_Theta_M = 1.0
+cov_Theta_M = 0.05
+sig_Theta_M = mu_Theta_M * cov_Theta_M
+Theta_M_dist = ERADist('lognormal', 'MOM', [mu_Theta_M, sig_Theta_M])
+
+# Material strength: steel yielding strength $M$ in MPa (JRC Report)
+mu_M = 1.0
+cov_M = 0.05
+sig_M = mu_M * cov_M
+M_dist = ERADist('lognormal', 'MOM', [mu_M, sig_M])
+
+
+# ---------------------------------------------------------------------------------------
+# Shifting / Scaling Random Variables 
+percentile_L1 = L1_dist.icdf(0.98)
+print(f"Snow 98% Percentile: {percentile_L1}")
+
+snow_shift = s_k / percentile_L1 # ratio of target to current percentile, by which mean and std get multiplied
+
+mu_L1_shifted = mu_L1 * snow_shift
+sig_L1_shifted = sig_L1 * snow_shift
+L1_shifted = ERADist('gumbel','MOM',[mu_L1_shifted, sig_L1_shifted])
+
+print(f"""Snow Load on Ground gets shifted by {snow_shift}""")
+print(f"""Old mean: {mu_L1}; New mean: {mu_L1_shifted}""")
+print(f"""Old std: {sig_L1}; New std: {sig_L1_shifted}""")
+print(f"""Old 98th percentile: {L1.icdf(.98)}; New 98th percentile: {L1_shifted.icdf(.98)}""")
+print(f"""Old COV: {L1.std()/L1.mean()}; New COV: {L1_shifted.std()/L1_shifted.mean()}""")
+
+
 
 # ---------------------------------------------------------------------------------------
 # Construction of the Nataf Distribution

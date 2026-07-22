@@ -3,43 +3,41 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # # Validation Check
-# x = 1.5 * t_S_cablenet_nonlinear(F_Y=-40.0 * 1e3, F_Z=-60.0 * 1e3) # input in kN
+# x = t_S_cablenet_nonlinear(F_Z=33, F_Y=19.5) # input in kN
 # print(f"Stress: {x} MPa") # kN
 # print(f"Force: {x * CROSS_AREA * 1000} kN") # kN
-
 
 
 sigma_list_linear = []
 sigma_list_nonlinear = []
 
 # # Range für Punktlasten mit 4 Seilen
-# Fy_range = np.linspace(0, 30 * 1e3, 20) # Load in kN
-# Fz_range = np.linspace(0, 30 * 1e3, 20) # Load in kN
+# Fy_range = np.linspace(0, 30, 20) # Load in kN
+# Fz_range = np.linspace(0, 30, 20) # Load in kN
 
 # Range für Punktlasten mit 8 Seilen
-Fy_range = np.linspace(0, 30 * 1e3, 20) # Load in kN
-Fz_range = np.linspace(0, 60 * 1e3, 20) # Load in kN
+Fy_range = np.linspace(0, 19.5, 20) # Load in kN
+Fz_range = np.linspace(0, 33, 20) # Load in kN
 
-# Fz = 30 * 1e3
-# Fy = 30 * 1e3
+# Fz = 33
+# Fy = 19.5
 
 Fz = 0
 Fy = 0
 
-#for Fy in Fy_range:
-for Fz in Fz_range:
-    sigma_linear = t_S_cablenet_linear(F_Y=Fy, F_Z=Fz)
-    sigma_nonlinear = t_S_cablenet_nonlinear(F_Y=Fy, F_Z=Fz)
+for Fy in Fy_range:
+#for Fz in Fz_range:
+    sigma_linear = t_S_cablenet_linear(F_Z=Fz, F_Y=Fy)
+    sigma_nonlinear = t_S_cablenet_nonlinear(F_Z=Fz, F_Y=Fy)
     
     sigma_list_linear.append(sigma_linear)
     sigma_list_nonlinear.append(sigma_nonlinear)
 
 
-    
 def plot_Fy_range():
 
     # Linear Plot
-    plt.plot(Fy_range/1000, sigma_list_linear, 
+    plt.plot(Fy_range, sigma_list_linear, 
             label='sigma linear', 
             marker='.',          # Fügt Punkte hinzu
             markersize=4,       # Größe der Punkte
@@ -47,7 +45,7 @@ def plot_Fy_range():
             linestyle='-')      # Durchgehende Linie
     
     # Nonlinear Plot
-    plt.plot(Fy_range/1000, sigma_list_nonlinear, 
+    plt.plot(Fy_range, sigma_list_nonlinear, 
             label='sigma nonlinear', 
             marker='.',          # Fügt Punkte hinzu
             markersize=4,       # Größe der Punkte
@@ -62,7 +60,7 @@ def plot_Fy_range():
 
     # Überschrift mit dem Wert von H hinzufügen
     #plt.title(f"H = {H} kN", fontsize=14, )
-    plt.title(f"Fz = {Fz/1000} kN", fontsize=14, )
+    plt.title(f"Fz = {Fz} kN", fontsize=14, )
 
     # Grid anzeigen
     plt.grid(True, linestyle=':', alpha=0.6) # 'linestyle' macht es punktiert, 'alpha' macht es blasser
@@ -86,7 +84,7 @@ def plot_Fy_range():
 def plot_Fz_range():
 
     # Linear Plot
-    plt.plot(Fy_range/1000, sigma_list_linear, 
+    plt.plot(Fy_range, sigma_list_linear, 
             label='sigma linear', 
             marker='.',          # Fügt Punkte hinzu
             markersize=4,       # Größe der Punkte
@@ -94,7 +92,7 @@ def plot_Fz_range():
             linestyle='-')      # Durchgehende Linie
     
     # Nonlinear Plot
-    plt.plot(Fy_range/1000, sigma_list_nonlinear, 
+    plt.plot(Fy_range, sigma_list_nonlinear, 
             label='sigma nonlinear', 
             marker='.',         # Fügt Punkte hinzu
             markersize=4,       # Größe der Punkte
@@ -107,7 +105,7 @@ def plot_Fz_range():
     plt.ylabel('sigma in [MPa]', fontsize=12)
 
     # Überschrift mit dem Wert von H hinzufügen
-    plt.title(f"Fy = {Fy/1000} kN", fontsize=14, )
+    plt.title(f"Fy = {Fy} kN", fontsize=14, )
     #plt.title(f"v = {v} kN/m", fontsize=14, )
     # Grid anzeigen
     plt.grid(True, linestyle=':', alpha=0.6) # 'linestyle' macht es punktiert, 'alpha' macht es blasser
@@ -129,5 +127,5 @@ def plot_Fz_range():
     plt.show()
 
 
-plot_Fz_range()
-#plot_Fy_range()
+#plot_Fz_range()
+plot_Fy_range()

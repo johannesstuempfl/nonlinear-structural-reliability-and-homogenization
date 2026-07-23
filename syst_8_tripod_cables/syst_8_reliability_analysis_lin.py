@@ -243,8 +243,8 @@ print(f"\n")
 print("================================")
 print("Design Parameters p")
 print("================================")
-print(f"p_opt1 = {p_opt1:.5f}")
-print(f"p_opt2 = {p_opt2:.5f}")
+print(f"p_opt1 = {p_opt1}")
+print(f"p_opt2 = {p_opt2}")
 
 # ---------------------------------------------------------------------------------------
 # Limit State Functions g(X) for option 1 and 2 with SuS

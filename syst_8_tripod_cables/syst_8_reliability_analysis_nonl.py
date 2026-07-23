@@ -360,6 +360,104 @@ def g_opt2_FORM(x):
 # print(f"alpha_2 = {u_star_2/beta_2}")
 
 # ---------------------------------------------------------------------------------------
-# Safety Homogenization with additional PSF gamma_new
+# Safety Homogenization towards TH1 Design Opt 2 
+from scipy.optimize import brentq
+
+# Target Reliabilities from TH1
+beta_TRG_opt1 = 5.434328482153831
+beta_TRG_opt2 = 5.593444211543155
 
 
+# Objective Function TH3 Opt 1
+def f(gamma_new):
+    def g_opt_1(x):
+        
+        resistance_side = p_opt1 * gamma_new * x[0] * x[1]
+        action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+
+        return resistance_side - action_side
+
+    [u_star, x_star, beta, alpha, Pf] = FORM_fmincon(g=g_opt_1, dg=[], distr=nataf)
+    return beta - beta_TRG_opt2
+
+# # this is for narrowing down the lower and upper bound of where brentq should search in the input space
+# for g in [0.94, 0.95]:
+#     print(g, f(g))
+
+
+# Finding the Root (Optimization Problem)
+gamma_new_1 = brentq(f, 0.94, 0.95)
+
+
+# Verification of gamma_new_1
+def g_opt1_FORM_verification(x):
+    
+    resistance_side = p_opt1 * gamma_new_1 * x[0] * x[1]
+    action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    
+    return resistance_side - action_side
+
+
+# Perform FORM with fmincom
+[u_star_1_ver, x_star_1_ver, beta_1_ver, alpha_1_ver, Pf_1_ver] = FORM_fmincon(g=g_opt1_FORM_verification, dg=[], distr=nataf, u0=0)
+
+
+
+
+# Objective Function TH3 Opt 2
+def f(gamma_new):
+    def g_opt_2(x):
+        
+        resistance_side = p_opt2 * gamma_new * x[0] * x[1]
+        action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+
+        return resistance_side - action_side
+
+    [u_star, x_star, beta, alpha, Pf] = FORM_fmincon(g=g_opt_2, dg=[], distr=nataf)
+    return beta - beta_TRG_opt2
+
+# # this is for narrowing down the lower and upper bound of where brentq should search in the input space
+# for g in [0.80, 0.81, 0.82]:
+#     print(g, f(g))
+
+
+# Finding the Root (Optimization Problem)
+gamma_new_2 = brentq(f, 0.80, 0.81)
+
+
+# Verification of gamma_new_1
+def g_opt2_FORM_verification(x):
+    
+    resistance_side = p_opt2 * gamma_new_2 * x[0] * x[1]
+    action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    
+    return resistance_side - action_side
+
+
+# Perform FORM with fmincom
+[u_star_2_ver, x_star_2_ver, beta_2_ver, alpha_2_ver, Pf_2_ver] = FORM_fmincon(g=g_opt2_FORM_verification, dg=[], distr=nataf, u0=0)
+
+
+
+# ---------------------------------------------------------------------------------------
+# Summary of Safety Homogenization
+
+print("\n\n=== SUMMARY SAFETY HOMOGENIZATION ===")
+print(f"\n")
+print("================================")
+print("Safety Homogenization towards TH1 Design Opt 2")
+print("================================")
+
+print(f"\n")
+print(f"TH3 Design Option 1")
+print(f"gamma_new = {gamma_new_1}")
+print(f"Target Reliability Index: {beta_TRG_opt2}")
+print(f"Optimized Reliability Index: {beta_1_ver}")
+print(f"Difference: {beta_1_ver - beta_TRG_opt2}")
+
+print(f"\n")
+print(f"TH3 Design Option 2")
+print(f"gamma_new = {gamma_new_2}")
+print(f"Target Reliability Index: {beta_TRG_opt2}")
+print(f"Optimized Reliability Index: {beta_2_ver}")
+print(f"Difference: {beta_2_ver - beta_TRG_opt2}")

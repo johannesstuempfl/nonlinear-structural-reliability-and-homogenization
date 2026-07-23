@@ -9,7 +9,7 @@ from ERA_Distribution_Classes_Python.Classes.FORM_fmincon import FORM_fmincon
 from ERA_Distribution_Classes_Python.Classes.SuS import SuS
 
 # Vectorized Version of the Structural response function (Better for array handling later)
-t_S_nonl_vectorized = np.vectorize(t_S_cablenet_nonlinear, otypes=[float])
+t_S_lin_vectorized = np.vectorize(t_S_cablenet_linear, otypes=[float])
 
 
 # ---------------------------------------------------------------------------------------
@@ -177,17 +177,17 @@ print(f"m_d = {m_d:.4f} MPa")
 # ---------------------------------------------------------------------------------------
 # Measures of Nonlinearity
 
-y0 = y0(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_nonlinear)
-k1 = kappa_1(l_1k=l_1k, l_1d=l_1d, t_S=t_S_cablenet_nonlinear)
-k2 = kappa_2(l_2k=l_2k, l_2d=l_2d, t_S=t_S_cablenet_nonlinear)
-k12 = kappa_12(l_1k=l_1k, l_1d=l_1d, l_2k=l_2k, l_2d=l_2d, t_S=t_S_cablenet_nonlinear)
-r1 = r1(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_nonlinear)
-r2 = r2(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_nonlinear)
+y0 = y0(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_linear)
+k1 = kappa_1(l_1k=l_1k, l_1d=l_1d, t_S=t_S_cablenet_linear)
+k2 = kappa_2(l_2k=l_2k, l_2d=l_2d, t_S=t_S_cablenet_linear)
+k12 = kappa_12(l_1k=l_1k, l_1d=l_1d, l_2k=l_2k, l_2d=l_2d, t_S=t_S_cablenet_linear)
+r1 = r1(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_linear)
+r2 = r2(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_linear)
 
-e_d_1 = t_S_cablenet_nonlinear(l_1d, l_2d)
+e_d_1 = t_S_cablenet_linear(l_1d, l_2d)
 
-argument_1 = gamma_F1 * t_S_cablenet_nonlinear(l_1k,  (gamma_F2 / gamma_F1) * l_2k)
-argument_2 = gamma_F2 * t_S_cablenet_nonlinear((gamma_F1 / gamma_F2) * l_1k, l_2k)
+argument_1 = gamma_F1 * t_S_cablenet_linear(l_1k,  (gamma_F2 / gamma_F1) * l_2k)
+argument_2 = gamma_F2 * t_S_cablenet_linear((gamma_F1 / gamma_F2) * l_1k, l_2k)
 e_d_2 = max(argument_1,argument_2)
 
 e_d_linear = t_S_cablenet_linear(l_1d, l_2d)
@@ -214,11 +214,6 @@ print("Design Option 2:")
 print(f"e_d = {e_d_2} MPa")
 print(f"eta = {e_d_2/m_d}")
 
-print(f"\n")
-print("Linear Reference:")
-print(f"e_d = {e_d_linear} MPa")
-print(f"eta = {e_d_linear/m_d}")
-
 # ---------------------------------------------------------------------------------------
 # Construction of the Nataf Distribution
 marginal_dist = [Theta_M_dist, 
@@ -234,10 +229,10 @@ nataf = ERANataf(M=marginal_dist, Correlation=np.eye(len(marginal_dist)))
 
 # ---------------------------------------------------------------------------------------
 # Design parameters p for option 1 and 2 
-e_d_opt1 = t_S_cablenet_nonlinear(F_Z=l_1d, F_Y=l_2d) # kN/m
+e_d_opt1 = t_S_cablenet_linear(F_Z=l_1d, F_Y=l_2d) # kN/m
 
-argument_1 = gamma_F1 * t_S_cablenet_nonlinear(F_Z=l_1k, F_Y=(gamma_F2/gamma_F1) * l_2k)
-argument_2 = gamma_F2 * t_S_cablenet_nonlinear(F_Z=(gamma_F1/gamma_F2) * l_1k, F_Y=l_2k)
+argument_1 = gamma_F1 * t_S_cablenet_linear(F_Z=l_1k, F_Y=(gamma_F2/gamma_F1) * l_2k)
+argument_2 = gamma_F2 * t_S_cablenet_linear(F_Z=(gamma_F1/gamma_F2) * l_1k, F_Y=l_2k)
 e_d_opt2 = max(argument_1, argument_2) # kN/m
 
 
@@ -257,14 +252,14 @@ print(f"p_opt2 = {p_opt2:.5f}")
 def g_opt1_SuS(x):
     
     resistance_side = p_opt1 * x[:,0] * x[:,1]
-    action_side = x[:,6] * t_S_nonl_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
+    action_side = x[:,6] * t_S_lin_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
     
     return resistance_side - action_side
 
 def g_opt2_SuS(x):
     
     resistance_side = p_opt2 * x[:,0] * x[:,1]
-    action_side = x[:,6] * t_S_nonl_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
+    action_side = x[:,6] * t_S_lin_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
     
     return resistance_side - action_side
 
@@ -314,52 +309,49 @@ def g_opt2_SuS(x):
 def g_opt1_FORM(x):
     
     resistance_side = p_opt1 * x[0] * x[1]
-    action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    action_side = x[6] * t_S_lin_vectorized((x[2] * x[3]), (x[4] * x[5]))
     
     return resistance_side - action_side
 
 def g_opt2_FORM(x):
     
     resistance_side = p_opt2 * x[0] * x[1]
-    action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    action_side = x[6] * t_S_lin_vectorized((x[2] * x[3]), (x[4] * x[5]))
     
     return resistance_side - action_side
 
 # ---------------------------------------------------------------------------------------
-# # FORM via HLRF # converged to beta = 0.0
-# # print("\n=== FORM (HLRF) - Design option (1) ===")
-# # [u_star_1, x_star_1, beta_1, Pf_1, _, _] = FORM_HLRF(
-# #     g=g_opt1_FORM, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
+# FORM via HLRF # converged to beta = 0.0
+# print("\n=== FORM (HLRF) - Design option (1) ===")
+# [u_star_1, x_star_1, beta_1, Pf_1, _, _] = FORM_HLRF(
+#     g=g_opt1_FORM, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
 
-# # FORM via fmincon  
-# print("\n=== FORM (fmincon) - Design option (1) ===")
-# [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
-#     g=g_opt1_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
+# FORM via fmincon  
+print("\n=== FORM (fmincon) - Design option (1) ===")
+[u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
+    g=g_opt1_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
 
-# # FORM via HLRF # converged to beta = 0.0
-# # print("\n=== FORM (HLRF) - Design option (2) ===")
-# # u_star_2, x_star_2, beta_2, Pf_2, _, _ = FORM_HLRF(
-# #     g=g_opt2_FORM, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
+# FORM via HLRF # converged to beta = 0.0
+# print("\n=== FORM (HLRF) - Design option (2) ===")
+# u_star_2, x_star_2, beta_2, Pf_2, _, _ = FORM_HLRF(
+#     g=g_opt2_FORM, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
 
-# # FORM via fmincon  
-# print("\n=== FORM (fmincon) - Design option (2) ===")
-# [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
-#     g=g_opt2_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
+# FORM via fmincon  
+print("\n=== FORM (fmincon) - Design option (2) ===")
+[u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
+    g=g_opt2_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
 
-# print("\n\n=== SUMMARY ===")
-# print("\nDesign option (1)")
-# print(f"Pf_1 = {Pf_1}")
-# print(f"beta_1 = {beta_1}") 
-# print(f"x_star_1 = {x_star_1}")
-# print(f"alpha_1 = {u_star_1/beta_1}")
+print("\n\n=== SUMMARY ===")
+print("\nDesign option (1)")
+print(f"Pf_1 = {Pf_1}")
+print(f"beta_1 = {beta_1}") 
+print(f"x_star_1 = {x_star_1}")
+print(f"alpha_1 = {u_star_1/beta_1}")
 
-# print("\n\nDesign option (2)")
-# print(f"Pf_2 = {Pf_2}")
-# print(f"beta_2 = {beta_2}") 
-# print(f"x_star_2 = {x_star_2}")
-# print(f"alpha_2 = {u_star_2/beta_2}")
-
-# ---------------------------------------------------------------------------------------
-# Safety Homogenization with additional PSF gamma_new
+print("\n\nDesign option (2)")
+print(f"Pf_2 = {Pf_2}")
+print(f"beta_2 = {beta_2}") 
+print(f"x_star_2 = {x_star_2}")
+print(f"alpha_2 = {u_star_2/beta_2}")
 
 

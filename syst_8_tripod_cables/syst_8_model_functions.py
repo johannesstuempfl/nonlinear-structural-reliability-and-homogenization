@@ -88,7 +88,7 @@ E = 18
 
 def t_S_cablenet_nonlinear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
     """
-    Takes in single loads F_Z and F_Y in kN/m2. 
+    Takes in loads F_Z and F_Y in kN/m2. 
     F_Z points in negative z-direction (downwards).
     F_Y points in negative y-direction.
     Returns stress of cable no. 5 in MPa.
@@ -231,7 +231,7 @@ def t_S_cablenet_nonlinear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
 
 def t_S_cablenet_linear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
     """
-    Takes in single loads F_Z and F_Y in kN. 
+    Takes in loads F_Z and F_Y in kN. 
     F_Z points in negative z-direction (downwards).
     F_Y points in negative y-direction.
     Returns stress of cable no. 5 in MPa.

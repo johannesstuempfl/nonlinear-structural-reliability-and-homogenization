@@ -5,11 +5,9 @@ import matplotlib.pyplot as plt
 
 sigma_list = []
 
-# Range für Punktlasten
-Fy_range = np.linspace(0, 19.5, 20) # Load in kN
-Fz_range = np.linspace(0, 33, 20) # Load in kN
-
-
+# Range für Lasten
+Fy_range = np.linspace(0, 1.0, 20) # Load in kN/m2
+Fz_range = np.linspace(0, 1.75, 20) # Load in kN/m2
 
 
 # Create meshgrid for 3D plotting
@@ -22,7 +20,8 @@ for i in range(len(Fy_range)):
             Fy_val = Fy_mesh[i, j]
             Fz_val = Fz_mesh[i, j]
             
-            sigma = t_S_cablenet_nonlinear(Fz_val, Fy_val)
+            #sigma = t_S_cablenet_nonlinear(Fz_val, Fy_val)
+            sigma = t_S_cablenet_linear(Fz_val, Fy_val)
             
             sigma_mesh[i, j] = sigma
             
@@ -82,5 +81,5 @@ ax4.grid(True, linestyle='--', alpha=0.6)
 ax4.legend(fontsize='small')
 
 plt.tight_layout()
-plt.savefig("./syst_8_tripod_cables/plots/3D_plot_sections", dpi=300)
+plt.savefig(f"./syst_8_tripod_cables/plots/3D_plot_sections", dpi=300)
 plt.show()

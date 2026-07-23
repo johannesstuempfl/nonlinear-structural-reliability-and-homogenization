@@ -49,9 +49,15 @@ KratosMultiphysics.Logger.GetDefaultOutput().SetSeverity(KratosMultiphysics.Logg
 THICKNESS = 0.001  # m, converts Pa (true stress, what Kratos computes) -> kN/m
                    # (the resultant convention the paper and StructuralMaterials.json use)
                    
-def _run_static_kratos_linear(L_snow_kNm2: float, L_wind_kNm2: float = 0.0) -> float:
-    L_snow_Pa = max(L_snow_kNm2, 0.0) * 1000.0
-    L_wind_Pa = max(L_wind_kNm2, 0.0) * 1000.0
+def _run_static_kratos_linear(L_1: float = 0.0, L_2: float = 0.0) -> float:
+    """
+    Takes in loads L_1 and L_2 in kN/m2. 
+    L_1 points in negative z-direction (downwards).
+    L_2 points in positive x-direction.
+    Returns max stress of the membrane in kN/m
+    """
+    L_snow_Pa = L_1 * 1000 # conversion from kN/m2 to Pa -> * 1000
+    L_wind_Pa = L_2 * 1000 # conversion from kN/m2 to Pa -> * 1000
     
     params_dict = {
         "problem_data": {
@@ -174,23 +180,16 @@ def _run_static_kratos_linear(L_snow_kNm2: float, L_wind_kNm2: float = 0.0) -> f
     return max(all_s11) * THICKNESS / 1000.0   # hard max, kN/m - no p-norm needed for a one-off comparison
 
 
-def _run_static_kratos_nonlinear(L_snow_kNm2: float, L_wind_kNm2: float = 0.0) -> float:
+def _run_static_kratos_nonlinear(L_1: float, L_2: float = 0.0) -> float:
     """
-    Runs ONE complete, standalone static/non-linear Kratos analysis: reads
-    formfinding_result_model.mdpa fresh (Stage 1's equilibrium-shape output),
-    ramps a force-controlled snow load from 0 up to L_kNm2 [kN/m^2], and
-    returns the max membrane stress in the warp direction [kN/m].
-
-    This is the generalized version of run_phase2.py's body: same physics,
-    same tributary-area point-load setup, but as a function of an arbitrary
-    target load instead of a fixed 0->1.2 kN/m^2 ramp. Every call below is a
-    FRESH Kratos Model/analysis (not reusing state between calls) - simplest
-    and safest way to avoid any accumulated-deformation bugs, at the cost of
-    re-reading the ~500-node mesh every time (fast, a fraction of a second).
+    Takes in loads L_1 and L_2 in kN/m2. 
+    L_1 points in negative z-direction (downwards).
+    L_2 points in positive x-direction.
+    Returns max stress of the membrane in kN/m
     """
-    L_snow_max_Pa = max(L_snow_kNm2, 0.0) * 1000.0
-    L_wind_max_Pa = max(L_wind_kNm2, 0.0) * 1000.0
-
+    L_snow_Pa = L_1 * 1000 # conversion from kN/m2 to Pa -> * 1000
+    L_wind_Pa = L_2 * 1000 # conversion from kN/m2 to Pa -> * 1000
+    
     # How many load substeps to use for THIS particular target load. This
     # matters more than it looks: Newton-Raphson for a geometrically
     # non-linear problem only converges reliably if consecutive load steps
@@ -204,7 +203,7 @@ def _run_static_kratos_nonlinear(L_snow_kNm2: float, L_wind_kNm2: float = 0.0) -
     # 0.05 kN/m^2/step here as a cheaper (fewer Kratos calls -> faster FORM
     # runs) but still-safe middle ground; tighten this (e.g. to 0.02-0.03) if
     # you still see "!! non-convergence" warnings below.
-    n_steps = max(15, math.ceil(L_snow_kNm2 / 0.05), math.ceil(L_wind_kNm2 / 0.05))
+    n_steps = max(15, math.ceil(L_1 / 0.05), math.ceil(L_2 / 0.05))
 
 
     # Same solver_settings structure as run_phase2.py's Stage 2, with
@@ -337,8 +336,8 @@ def _run_static_kratos_nonlinear(L_snow_kNm2: float, L_wind_kNm2: float = 0.0) -
     for step in range(n_steps):
         analysis.time = analysis._AdvanceTime()
         t_frac = (step + 1) / n_steps
-        L_snow = t_frac * L_snow_max_Pa
-        L_wind = t_frac * L_wind_max_Pa
+        L_snow = t_frac * L_snow_Pa
+        L_wind = t_frac * L_wind_Pa
 
         for node, snow_a, wind_a in nodes_with_load:
             node.SetSolutionStepValue(sma.POINT_LOAD, [L_wind * wind_a, 0.0, -L_snow * snow_a])
@@ -348,7 +347,7 @@ def _run_static_kratos_nonlinear(L_snow_kNm2: float, L_wind_kNm2: float = 0.0) -
         analysis.FinalizeSolutionStep()
 
         if not converged:
-            print(f"    !! non-convergence at L_snow={L_snow_kNm2:.4f}, L_wind={L_wind_kNm2:.4f} kN/m^2, "
+            print(f"    !! non-convergence at L_snow={L_1:.4f}, L_wind={L_2:.4f} kN/m^2, "
                   f"substep {step+1}/{n_steps}", flush=True)
 
         if step == n_steps - 1:
@@ -372,7 +371,7 @@ def _run_static_kratos_nonlinear(L_snow_kNm2: float, L_wind_kNm2: float = 0.0) -
 _CALL_COUNT = [0]  # plain list so the closure below can mutate it (no `nonlocal` needed)
 
 
-def t_S_kratos_linear(L_snow, L_wind=0.0):
+def t_S_hypar_linear(L_1: float = 0.0, L_2: float = 0.0):
     """
     The structural-response function - this is syst_7's analog of syst_4's
     t_S(l_1, l_2). Takes a snow load L [kN/m^2] and returns the resulting max
@@ -396,9 +395,9 @@ def t_S_kratos_linear(L_snow, L_wind=0.0):
     what a problematic trace looks like: repeated near-identical L values
     with inconsistent e, or L drifting to physically extreme values).
     """
-    scalar_in = (np.ndim(L_snow) == 0) and (np.ndim(L_wind) == 0)
-    L_snow_arr = np.atleast_1d(np.asarray(L_snow, dtype=float))
-    L_wind_arr = np.atleast_1d(np.asarray(L_wind, dtype=float))
+    scalar_in = (np.ndim(L_1) == 0) and (np.ndim(L_2) == 0)
+    L_snow_arr = np.atleast_1d(np.asarray(L_1, dtype=float))
+    L_wind_arr = np.atleast_1d(np.asarray(L_2, dtype=float))
     L_snow_arr, L_wind_arr = np.broadcast_arrays(L_snow_arr, L_wind_arr)
     out = np.empty(L_snow_arr.shape[0])
     for i in range(L_snow_arr.shape[0]):
@@ -410,7 +409,7 @@ def t_S_kratos_linear(L_snow, L_wind=0.0):
 
 
 
-def t_S_kratos_nonlinear(L_snow, L_wind=0.0):
+def t_S_hypar_nonlinear(L_1: float = 0.0, L_2: float = 0.0):
     """
     The structural-response function - this is syst_7's analog of syst_4's
     t_S(l_1, l_2). Takes a snow load L [kN/m^2] and returns the resulting max
@@ -434,9 +433,9 @@ def t_S_kratos_nonlinear(L_snow, L_wind=0.0):
     what a problematic trace looks like: repeated near-identical L values
     with inconsistent e, or L drifting to physically extreme values).
     """
-    scalar_in = (np.ndim(L_snow) == 0) and (np.ndim(L_wind) == 0)
-    L_snow_arr = np.atleast_1d(np.asarray(L_snow, dtype=float))
-    L_wind_arr = np.atleast_1d(np.asarray(L_wind, dtype=float))
+    scalar_in = (np.ndim(L_1) == 0) and (np.ndim(L_2) == 0)
+    L_snow_arr = np.atleast_1d(np.asarray(L_1, dtype=float))
+    L_wind_arr = np.atleast_1d(np.asarray(L_2, dtype=float))
     L_snow_arr, L_wind_arr = np.broadcast_arrays(L_snow_arr, L_wind_arr)
     out = np.empty(L_snow_arr.shape[0])
     for i in range(L_snow_arr.shape[0]):
@@ -452,24 +451,10 @@ def t_S_kratos_nonlinear(L_snow, L_wind=0.0):
 if __name__ == "__main__":
     print("===Test Phase===")
     
-    # def kappa_1(l_1k, l_1d, t_S):
-    #     numerator = (t_S(l_1d) - t_S(l_1k)) * l_1k
-    #     denominator = (t_S(l_1k) - t_S(0.0)) * (l_1d-l_1k)
-    #     return numerator / denominator
-    
-    # k1 = kappa_1(l_1k=0.6,  l_1d=0.9, t_S=t_S_kratos_nonlinear)
-    # print(f"kappa_1: {k1}")
-    
-    # def y0(l_k, t_S):
-    #     return t_S(l_k) / t_S(0.0)
-    
-    # y0 = y0(l_k=0.6, t_S=t_S_kratos_nonlinear)
-    # print(f"y0: {y0}")
-    
-    N_lin = t_S_kratos_linear(L_snow=0.6,L_wind=0.3)
+    N_lin = t_S_hypar_linear(L_1=0.6,L_2=0.3)
     print(f"\nN = {N_lin}")
     
-    N_nonl = t_S_kratos_nonlinear(L_snow=0.6,L_wind=0.3)
+    N_nonl = t_S_hypar_nonlinear(L_1=0.6,L_2=0.3)
     print(f"\nN = {N_nonl}")
     
     print(f"Difference: {N_nonl-N_lin}")

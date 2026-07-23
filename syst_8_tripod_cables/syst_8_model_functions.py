@@ -35,16 +35,7 @@ sys.path.insert(0, "/workspace")
 KratosMultiphysics.Logger.GetDefaultOutput().SetSeverity(KratosMultiphysics.Logger.Severity.WARNING)
 
 
-# # 4 cable system
-# ANCHOR_COORDS = [
-#     (0.0,  0.0,  0.0),
-#     (6.0,  0.0,  0.0),
-#     (6.0,  0.0, -0.2),
-#     (0.0,  0.0, -0.2),
-# ]
-# COMMON_COORD = (3.0, 0.0, -0.1)
-
-# # Test: 8 cable system
+# # 8 cable system
 # ANCHOR_COORDS = [
 #     (0.0,  0.0,  0.0),
 #     (6.0,  0.0,  0.0),

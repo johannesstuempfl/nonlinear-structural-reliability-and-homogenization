@@ -118,7 +118,12 @@ def FORM_HLRF(g,dg,distr,sensitivity_analysis, u0 = 1, tol = 1e-6, maxit = 500):
 
         # 4. calculate u_{k+1}
         u[k+1,:] = -beta[k]*alpha
-
+        
+        # Johannes: guard against a bad (NaN/huge) finite-difference gradient from the FE-based LSF
+        # sending the search into a numerically meaningless region in standard-normal space
+        u[k+1,:] = np.nan_to_num(u[k+1,:], nan=0.0, posinf=8.0, neginf=-8.0)
+        u[k+1,:] = np.clip(u[k+1,:], -8.0, 8.0)
+        
         # next iteration
         if (np.linalg.norm(u[k+1,:]-u[k,:]) <= tol):
             break

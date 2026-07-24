@@ -119,8 +119,8 @@ def FORM_fmincon(g, dg, distr:ERANataf, u0:float = 0.1,
         # Run the optimization function without the gradient information
         cons = ({'type': 'ineq', 'fun': lambda u: -H(u)})
         
-        # Test in hope that algorithm quits using finite differences (takes way too long for hypar model)
-        cons = ({'type': 'ineq', 'fun': lambda u: -H(u), 'jac': lambda u: -dgu(u)})
+        # # Johannes: Test in hope that algorithm quits using finite differences (takes way too long for hypar model)
+        # cons = ({'type': 'ineq', 'fun': lambda u: -H(u), 'jac': lambda u: -dgu(u)})
         
         # cons = [
         # {'type': 'ineq', 'fun': lambda u: -H(u)},

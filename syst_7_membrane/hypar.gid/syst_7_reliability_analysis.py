@@ -189,36 +189,51 @@ print(f"p_opt2 = {p_opt2:.5f}")
 
 # ---------------------------------------------------------------------------------------
 # Limit State Functions g(X) for option 1 and 2 with FORM
-# def g_opt1_FORM(x):
-#     x = np.asarray(x, dtype=float)
-#     return p_opt1 * x[..., 0] - t_S_hypar_nonlinear(L_1= x[..., 1], L_2= x[..., 2])
+
+def g_opt1_FORM(x):
+    x = np.asarray(x, dtype=float)
+    resistance_side = p_opt1 * x[..., 0] * x[..., 1]
+    
+    L1_raw = x[..., 2] * x[..., 3]
+    L2_raw = x[..., 4] * x[..., 5]
+    # nan_to_num FIRST -- np.clip alone does not sanitize NaN, only out-of-range finite values
+    L1_eff = np.clip(np.nan_to_num(L1_raw, nan=0.0, posinf=20.0, neginf=0.0), 0.0, 20.0)
+    L2_eff = np.clip(np.nan_to_num(L2_raw, nan=0.0, posinf=20.0, neginf=0.0), 0.0, 20.0)
+
+    action_side = x[..., 6] * t_S_hypar_nonlinear(L1_eff, L2_eff)
+    
+    g_val = resistance_side - action_side
+    
+    # guard against the FE solve itself returning non-finite (e.g. non-convergence at extreme loads)
+    return np.nan_to_num(g_val, nan=-1e6, posinf=1e6, neginf=-1e6)
 
 # def g_opt2_FORM(x):
 #     x = np.asarray(x, dtype=float)
 #     return p_opt2 * x[..., 0] - t_S_hypar_nonlinear(L_1= x[..., 1], L_2= x[..., 2])
 
-# Test: Conventional indexing
-def g_opt1_FORM(x):
-    resistance_side = p_opt1 * x[0] * x[1]
-    action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
-    
-    return resistance_side - action_side
 
-def g_opt2_FORM(x):
-    resistance_side = p_opt2 * x[0] * x[1]
-    action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+# # Test: Conventional indexing
+# def g_opt1_FORM(x):
+#     resistance_side = p_opt1 * x[0] * x[1]
+#     action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
     
-    return resistance_side - action_side
+#     return t_S_hypar_nonlinear
+
+# def g_opt2_FORM(x):
+#     resistance_side = p_opt2 * x[0] * x[1]
+#     action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    
+#     return resistance_side - action_side
 # ---------------------------------------------------------------------------------------
-# FORM via HLRF # 
-# print("\n=== FORM (HLRF) - Design option (1) ===")
-# [u_star_1, x_star_1, beta_1, Pf_1, _, _] = FORM_HLRF(
-#     g=g_opt1_FORM, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
+# FORM via HLRF 
+print("\n=== FORM (HLRF) - Design option (1) ===")
+[u_star_1, x_star_1, beta_1, Pf_1, _, _] = FORM_HLRF(
+    g=g_opt1_FORM, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
 
-# FORM via fmincon  
-print("\n=== FORM (fmincon) - Design option (1) ===")
-[u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
-    g=g_opt1_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
+# # FORM via fmincon  
+# print("\n=== FORM (fmincon) - Design option (1) ===")
+# [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
+#     g=g_opt1_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-4)
 
 # FORM via HLRF # 
 # print("\n=== FORM (HLRF) - Design option (2) ===")
@@ -228,16 +243,18 @@ print("\n=== FORM (fmincon) - Design option (1) ===")
 # # FORM via fmincon  
 # print("\n=== FORM (fmincon) - Design option (2) ===")
 # [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
-#     g=g_opt2_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
+#     g=g_opt2_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-4)
 
 print("\n\n=== SUMMARY ===")
 print("\nDesign option (1)")
-print(f"beta = {beta_1:.3f}") 
+print(f"Pf_1 = {Pf_1}")
+print(f"beta = {beta_1}") 
 print(f"x_star_1 = {x_star_1}")
 print(f"alpha_1 = {u_star_1/beta_1}")
 
 # print("\n\nDesign option (2)")
-# print(f"beta = {beta_2:.3f}") 
+# print(f"Pf_2 = {Pf_2}")
+# print(f"beta = {beta_2}") 
 # print(f"x_star_2 = {x_star_2}")
 # print(f"alpha_2 = {u_star_2/beta_2}")
 

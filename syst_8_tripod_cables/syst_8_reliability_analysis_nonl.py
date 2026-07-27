@@ -16,9 +16,8 @@ t_S_nonl_vectorized = np.vectorize(t_S_cablenet_nonlinear, otypes=[float])
 # Target characteristic Values for calibrating Random Variables
 
 # Characteristic yield strength in MPa 
-#f_u = 1601.7305471 # deprecated
-f_u = 1726.2770986111154 # adjusted to eta = 100% for Design Opt 2
-
+# f_u = 1726.2770986111154 # deprecated! adjusted to eta = 100% for Design Opt 2
+f_u = 2617.8901319049537 # adjusted to eta = 100% for Design Opt 1 TH1 (linear)
 # Characteristic Loads in kN/m2
 s_k = 1.1  # snow  (in negative z-direction)
 q_b = 0.65 # wind pressure (in negative y-direction)
@@ -212,15 +211,23 @@ nataf = ERANataf(M=marginal_dist, Correlation=np.eye(len(marginal_dist)))
 
 # ---------------------------------------------------------------------------------------
 # Design parameters p for option 1 and 2 
+# Design Opt 1
 e_d_opt1 = t_S_cablenet_nonlinear(F_Z=l_1d, F_Y=l_2d) # kN/m
 
+# Design Opt 2
 argument_1 = gamma_F1 * t_S_cablenet_nonlinear(F_Z=l_1k, F_Y=(gamma_F2/gamma_F1) * l_2k)
 argument_2 = gamma_F2 * t_S_cablenet_nonlinear(F_Z=(gamma_F1/gamma_F2) * l_1k, F_Y=l_2k)
 e_d_opt2 = max(argument_1, argument_2) # kN/m
 
+# Design Opt 2'
+argument_1_primed = gamma_F1 * (t_S_cablenet_nonlinear(l_1k,  (gamma_F2 / gamma_F1) * l_2k) - t_S_cablenet_linear(0,0)) + t_S_cablenet_linear(0,0)
+argument_2_primed = gamma_F2 * (t_S_cablenet_nonlinear((gamma_F1 / gamma_F2) * l_1k, l_2k) - t_S_cablenet_linear(0,0)) + t_S_cablenet_linear(0,0)
+e_d_2_primed = max(argument_1_primed, argument_2_primed)
+
 
 p_opt1 = gamma_M * e_d_opt1 / m_k
 p_opt2 = gamma_M * e_d_opt2 / m_k
+p_opt2_primed = gamma_M * e_d_2_primed / m_k
 
 print(f"\n")
 print("================================")
@@ -236,6 +243,11 @@ print("Design Option 2:")
 print(f"e_d = {e_d_opt2} MPa")
 print(f"eta = {e_d_opt2/m_d}")
 print(f"p_opt2 = {p_opt2:.5f}")
+print(f"\n")
+print("Design Option 2':")
+print(f"e_d = {e_d_2_primed} MPa")
+print(f"eta = {e_d_2_primed/m_d}")
+print(f"p_opt2' = {p_opt2_primed}")
 
 # ---------------------------------------------------------------------------------------
 # Limit State Functions g(X) for option 1 and 2 with SuS
@@ -250,6 +262,13 @@ def g_opt1_SuS(x):
 def g_opt2_SuS(x):
     
     resistance_side = p_opt2 * x[:,0] * x[:,1]
+    action_side = x[:,6] * t_S_nonl_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
+    
+    return resistance_side - action_side
+
+def g_opt2_primed_SuS(x):
+    
+    resistance_side = p_opt2_primed * x[:,0] * x[:,1]
     action_side = x[:,6] * t_S_nonl_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
     
     return resistance_side - action_side
@@ -311,49 +330,58 @@ def g_opt2_FORM(x):
     
     return resistance_side - action_side
 
-# ---------------------------------------------------------------------------------------
-# # FORM via HLRF # converged to beta = 0.0
-# # print("\n=== FORM (HLRF) - Design option (1) ===")
-# # [u_star_1, x_star_1, beta_1, Pf_1, _, _] = FORM_HLRF(
-# #     g=g_opt1_FORM, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
+def g_opt2_primed_FORM(x):
+    
+    resistance_side = p_opt2_primed * x[0] * x[1]
+    action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    
+    return resistance_side - action_side
 
-# # FORM via fmincon  
-# print("\n=== FORM (fmincon) - Design option (1) ===")
-# [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
-#     g=g_opt1_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
-
-# # FORM via HLRF # converged to beta = 0.0
-# # print("\n=== FORM (HLRF) - Design option (2) ===")
-# # u_star_2, x_star_2, beta_2, Pf_2, _, _ = FORM_HLRF(
-# #     g=g_opt2_FORM, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
-
-# # FORM via fmincon  
-# print("\n=== FORM (fmincon) - Design option (2) ===")
-# [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
-#     g=g_opt2_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
-
-# print("\n\n=== SUMMARY ===")
-# print("\nDesign option (1)")
-# print(f"Pf_1 = {Pf_1}")
-# print(f"beta_1 = {beta_1}") 
-# print(f"x_star_1 = {x_star_1}")
-# print(f"alpha_1 = {u_star_1/beta_1}")
-
-# print("\n\nDesign option (2)")
-# print(f"Pf_2 = {Pf_2}")
-# print(f"beta_2 = {beta_2}") 
-# print(f"x_star_2 = {x_star_2}")
-# print(f"alpha_2 = {u_star_2/beta_2}")
 
 # ---------------------------------------------------------------------------------------
-# Safety Homogenization towards TH1 Design Opt 2
- 
-# from scipy.optimize import brentq
+# FORM via fmincon  
+print("\n=== FORM (fmincon) - Design option (1) ===")
+[u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
+    g=g_opt1_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
 
-# # Target Reliabilities from TH1
-# beta_TRG_opt1 = 5.434328482153831
-# beta_TRG_opt2 = 5.593444211543155
 
+# FORM via fmincon  
+print("\n=== FORM (fmincon) - Design option (2) ===")
+[u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
+    g=g_opt2_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
+
+# FORM via fmincon  
+print("\n=== FORM (fmincon) - Design option (2') ===")
+[u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
+    g=g_opt2_primed_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
+
+print("\n\n=== SUMMARY ===")
+print("\nDesign option (1)")
+print(f"Pf_1 = {Pf_1}")
+print(f"beta_1 = {beta_1}") 
+print(f"x_star_1 = {x_star_1}")
+print(f"(alpha_1)^2 = {(u_star_1/beta_1)**2}")
+
+print("\n\nDesign option (2)")
+print(f"Pf_2 = {Pf_2}")
+print(f"beta_2 = {beta_2}") 
+print(f"x_star_2 = {x_star_2}")
+print(f"(alpha_2)^2 = {(u_star_2/beta_2)**2}")
+
+print("\n\nDesign option (2')")
+print(f"Pf_2' = {Pf_2_primed}")
+print(f"beta_2' = {beta_2_primed}") 
+print(f"x_star_2' = {x_star_2_primed}")
+print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
+
+# ---------------------------------------------------------------------------------------
+# Safety Homogenization towards TH1 Design Opt 1
+from scipy.optimize import brentq
+
+# Target Reliabilities from TH1
+beta_TRG_opt1 = 5.4343284907367915 # this is the one i am homogenizing towards
+beta_TRG_opt2 = 5.593444668051576
+beta_TRG_opt2_primed = 5.434328491493094
 
 # # Objective Function TH3 Opt 1
 # def f(gamma_new):
@@ -365,15 +393,15 @@ def g_opt2_FORM(x):
 #         return resistance_side - action_side
 
 #     [u_star, x_star, beta, alpha, Pf] = FORM_fmincon(g=g_opt_1, dg=[], distr=nataf)
-#     return beta - beta_TRG_opt2
+#     return beta - beta_TRG_opt1
 
 # # # this is for narrowing down the lower and upper bound of where brentq should search in the input space
-# # for g in [0.94, 0.95]:
+# # for g in [0.90, 0.91, 0.92, 0.93]:
 # #     print(g, f(g))
 
 
 # # Finding the Root (Optimization Problem)
-# gamma_new_1 = brentq(f, 0.94, 0.95)
+# gamma_new_1 = brentq(f, 0.91, 0.92)
 
 
 # # Verification of gamma_new_1
@@ -384,10 +412,8 @@ def g_opt2_FORM(x):
     
 #     return resistance_side - action_side
 
-
 # # Perform FORM with fmincom
 # [u_star_1_ver, x_star_1_ver, beta_1_ver, alpha_1_ver, Pf_1_ver] = FORM_fmincon(g=g_opt1_FORM_verification, dg=[], distr=nataf, u0=0)
-
 
 
 
@@ -401,15 +427,15 @@ def g_opt2_FORM(x):
 #         return resistance_side - action_side
 
 #     [u_star, x_star, beta, alpha, Pf] = FORM_fmincon(g=g_opt_2, dg=[], distr=nataf)
-#     return beta - beta_TRG_opt2
+#     return beta - beta_TRG_opt1
 
 # # # this is for narrowing down the lower and upper bound of where brentq should search in the input space
-# # for g in [0.80, 0.81, 0.82]:
+# # for g in [0.78, 0.79, 0.80]:
 # #     print(g, f(g))
 
 
 # # Finding the Root (Optimization Problem)
-# gamma_new_2 = brentq(f, 0.80, 0.81)
+# gamma_new_2 = brentq(f, 0.78, 0.79)
 
 
 # # Verification of gamma_new_1
@@ -426,25 +452,69 @@ def g_opt2_FORM(x):
 
 
 
+# Objective Function TH3 Opt 2'
+def f(gamma_new):
+    def g_opt_2_primed(x):
+        
+        resistance_side = p_opt2_primed * gamma_new * x[0] * x[1]
+        action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+
+        return resistance_side - action_side
+
+    [u_star, x_star, beta, alpha, Pf] = FORM_fmincon(g=g_opt_2_primed, dg=[], distr=nataf)
+    return beta - beta_TRG_opt1
+
+# # this is for narrowing down the lower and upper bound of where brentq should search in the input space
+# for g in [0.84, 0.85, 0.86]:
+#     print(g, f(g))
+
+
+# Finding the Root (Optimization Problem)
+gamma_new_2_primed = brentq(f, 0.84, 0.85)
+
+
+# Verification of gamma_new_1
+def g_opt2_primed_FORM_verification(x):
+    
+    resistance_side = p_opt2_primed * gamma_new_2_primed * x[0] * x[1]
+    action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    
+    return resistance_side - action_side
+
+
+# Perform FORM with fmincom
+[u_star_2_primed_ver, x_star_2_primed_ver, beta_2_primed_ver, alpha_2_primed_ver, Pf_2_primed_ver] = FORM_fmincon(
+    g=g_opt2_primed_FORM_verification, dg=[], distr=nataf, u0=0)
+
+
+
+
 # ---------------------------------------------------------------------------------------
 # Summary of Safety Homogenization
 
-# print("\n\n=== SUMMARY SAFETY HOMOGENIZATION ===")
-# print(f"\n")
-# print("================================")
-# print("Safety Homogenization towards TH1 Design Opt 2")
-# print("================================")
+print("\n\n=== SUMMARY SAFETY HOMOGENIZATION ===")
+print(f"\n")
+print("================================")
+print("Safety Homogenization towards TH1 Design Opt 1")
+print("================================")
 
 # print(f"\n")
 # print(f"TH3 Design Option 1")
 # print(f"gamma_new = {gamma_new_1}")
-# print(f"Target Reliability Index: {beta_TRG_opt2}")
+# print(f"Target Reliability Index: {beta_TRG_opt1}")
 # print(f"Optimized Reliability Index: {beta_1_ver}")
-# print(f"Difference: {beta_1_ver - beta_TRG_opt2}")
+# print(f"Difference: {beta_1_ver - beta_TRG_opt1}")
 
 # print(f"\n")
 # print(f"TH3 Design Option 2")
 # print(f"gamma_new = {gamma_new_2}")
-# print(f"Target Reliability Index: {beta_TRG_opt2}")
+# print(f"Target Reliability Index: {beta_TRG_opt1}")
 # print(f"Optimized Reliability Index: {beta_2_ver}")
-# print(f"Difference: {beta_2_ver - beta_TRG_opt2}")
+# print(f"Difference: {beta_2_ver - beta_TRG_opt1}")
+
+print(f"\n")
+print(f"TH3 Design Option 2'")
+print(f"gamma_new = {gamma_new_2_primed}")
+print(f"Target Reliability Index: {beta_TRG_opt1}")
+print(f"Optimized Reliability Index: {beta_2_primed_ver}")
+print(f"Difference: {beta_2_primed_ver - beta_TRG_opt1}")

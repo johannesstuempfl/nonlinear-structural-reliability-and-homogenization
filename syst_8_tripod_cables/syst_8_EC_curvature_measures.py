@@ -3,9 +3,8 @@ from syst_8_measures_of_nonlinearity import y0, kappa_1, kappa_2, kappa_12, r1, 
 
 
 # characteristic tensile strength in MPa 
-#f_u = 1601.7305471 # deprecated
-f_u = 1726.2770986111154 # adjusted to eta = 100% for Design Opt 2
-
+#f_u = 1726.2770986111154 # deprecated! adjusted to eta = 100% for Design Opt 2
+f_u = 2617.8901319049537 # adjusted to eta = 100% for Design Opt 1 TH1 (linear)
 s_k = 1.1  # snow kN/m2 (in negative z-direction)
 q_b = 0.65 # wind pressure kN/m2 (in negative y-direction)
 w_k = q_b  # wind load kN/m2 without c_pe,10. Choice of loads more arbitrary than syst_4

@@ -326,84 +326,98 @@ for i in range(len(V_range)):
 #     "mathtext.fontset": "cm",
 #     "font.family": "cmr10",
 #     "axes.unicode_minus": False,
-#     "font.size": 14,
+#     "font.size": 18,
 # })
- 
+
 # TITLE_FONTSIZE = 18   # <-- bump this to make all headings bigger/smaller
- 
+
 # # --- FIGURE 1: 3D Surface & Contour (Updated) ---
 # fig1 = plt.figure(figsize=(16, 7))
- 
+# gs1 = fig1.add_gridspec(1, 2, width_ratios=[1.1, 1.0], wspace=0.4)
+
 # # Subplot 1: 3D surface with BOTH M_Th1 and M_Th2
-# ax1 = fig1.add_subplot(121, projection='3d')
- 
+# ax1 = fig1.add_subplot(gs1[0], projection='3d')
+
 # # # Plotting Theory 1 Surface
 # #surf1 = ax1.plot_surface(V_mesh, H_mesh, M_Th1_mesh, cmap='plasma',
 # #                          edgecolor='none', alpha=0.5, label='Th. 1')
- 
+
 # # Plotting Theory 2 Surface
 # surf2 = ax1.plot_surface(V_mesh, H_mesh, M_Th2_mesh, cmap='viridis',
 #                          edgecolor='none', alpha=0.7, label='TH2')
- 
-# ax1.set_xlabel(r'Vertical Force $l_{1}$ $[\mathrm{kN/m}]$')
-# ax1.set_ylabel(r'Horizontal Force $l_{2}$ $[\mathrm{kN/m}]$')
-# ax1.set_zlabel(r'Internal Moment $M$ $[\mathrm{kNm}]$')
+
+# ax1.set_xlabel(r'Vertical Force $l_{1}$ $[\mathrm{kN/m}]$', labelpad=12)
+# ax1.set_ylabel(r'Horizontal Force $l_{2}$ $[\mathrm{kN/m}]$', labelpad=15)
+# ax1.set_zlabel(r'Internal Moment $M$ $[\mathrm{kNm}]$', labelpad=10)
 # ax1.set_title(r'$M$ as function of $l_{1}$ and $H$', fontsize=TITLE_FONTSIZE, fontweight='bold')
 # ax1.view_init(elev=25, azim=225)
- 
+
 # # Subplot 2: Contour plot (keeping your existing logic)
-# ax2 = fig1.add_subplot(122)
+# ax2 = fig1.add_subplot(gs1[1])
 # contour = ax2.contourf(V_mesh, H_mesh, M_Th2_mesh, levels=20, cmap='viridis')
 # ax2.set_xlabel(r'Vertical Force $l_{1}$ $[\mathrm{kN/m}]$')
 # ax2.set_ylabel(r'Horizontal Force $l_{2}$ $[\mathrm{kN/m}]$')
 # ax2.set_title(r'Internal Moment $M$ - Contour Plot', fontsize=TITLE_FONTSIZE, fontweight='bold')
-# fig1.colorbar(contour, ax=ax2, label=r'$M$ $[\mathrm{kNm}]$')
- 
-# plt.tight_layout()
- 
+# fig1.colorbar(contour, ax=ax2, label=r'$M$ $[\mathrm{kNm}]$', fraction=0.046, pad=0.04)
+# ax2.set_box_aspect(1)   # force a square (quadratic) contour panel, regardless of data range
+
+# # Reserve a fixed, generous left margin for the 3D z-axis label instead of
+# # relying on bbox_inches='tight': matplotlib's tight-bbox calculation is
+# # known to under-measure rotated 3D text and clips it no matter the padding.
+# fig1.subplots_adjust(left=0.16, right=0.96, top=0.90, bottom=0.08)
+# fig1.savefig('./plots/fig1_surface_contour.png', dpi=220, facecolor='white')
+# fig1.savefig('./plots/fig1_surface_contour.svg', facecolor='white')
+
 # # --- FIGURE 2: Extra Pictures (2D Projections) ---
 # fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(16, 6))
- 
+
 # # Picture 1: V vs M (Looking "sideways" at the 3D plot)
 # # We plot multiple lines for different H values to show the trend
 # for i in range(0, len(H_range), 4): # Plot every 4th H-level for clarity
 #     ax3.plot(V_range, M_Th2_mesh[i, :], label=fr'$l_{2} = {H_range[i]:.1f}\ \mathrm{{kN/m}}$')
- 
+
 # ax3.set_xlabel(r'Vertical Force $l_{1}$ $[\mathrm{kN/m}]$')
 # ax3.set_ylabel(r'Internal Moment $M$ $[\mathrm{kNm}]$')
 # ax3.set_title(r'$M$ as function of $l_{1}$ (Various $l_{2}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
 # ax3.grid(True, linestyle='--', alpha=0.6)
-# ax3.legend(fontsize='small')
- 
+# ax3.legend(fontsize='small', loc='upper left')
+
 # # Picture 2: H vs M (Looking "front-on" at the 3D plot)
 # # We plot multiple lines for different V values
 # for i in range(0, len(V_range), 4): # Plot every 4th V-level
 #     ax4.plot(H_range, M_Th2_mesh[:, i], label=fr'$l_{1} = {V_range[i]:.1f}\ \mathrm{{kN/m}}$')
- 
+
 # ax4.set_xlabel(r'Horizontal Force $l_{2}$ $[\mathrm{kN/m}]$')
 # ax4.set_ylabel(r'Internal Moment $M$ $[\mathrm{kNm}]$')
 # ax4.set_title(r'$M$ as function of $l_{2}$ (Various $l_{1}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
 # ax4.grid(True, linestyle='--', alpha=0.6)
-# ax4.legend(fontsize='small')
- 
-# plt.tight_layout()
-# plt.show()
+# ax4.legend(fontsize='small', loc='upper left')
 
+# plt.tight_layout()
+
+# fig2.savefig('./plots/fig2_projections.png', dpi=220, bbox_inches='tight', facecolor='white')
+# fig2.savefig('./plots/fig2_projections.svg', bbox_inches='tight', facecolor='white')
+
+
+from matplotlib.ticker import FormatStrFormatter
 
 plt.rcParams.update({
     "mathtext.fontset": "cm",
     "font.family": "cmr10",
     "axes.unicode_minus": False,
-    "font.size": 14,
+    "font.size": 18,
 })
+
+ONE_DECIMAL = FormatStrFormatter('%.1f')   # forces every tick label to read e.g. "2.0" instead of "2"
 
 TITLE_FONTSIZE = 18   # <-- bump this to make all headings bigger/smaller
 
 # --- FIGURE 1: 3D Surface & Contour (Updated) ---
 fig1 = plt.figure(figsize=(16, 7))
+gs1 = fig1.add_gridspec(1, 2, width_ratios=[1.1, 1.0], wspace=0.4)
 
 # Subplot 1: 3D surface with BOTH M_Th1 and M_Th2
-ax1 = fig1.add_subplot(121, projection='3d')
+ax1 = fig1.add_subplot(gs1[0], projection='3d')
 
 # # Plotting Theory 1 Surface
 #surf1 = ax1.plot_surface(V_mesh, H_mesh, M_Th1_mesh, cmap='plasma',
@@ -413,23 +427,36 @@ ax1 = fig1.add_subplot(121, projection='3d')
 surf2 = ax1.plot_surface(V_mesh, H_mesh, M_Th2_mesh, cmap='viridis',
                          edgecolor='none', alpha=0.7, label='TH2')
 
-ax1.set_xlabel(r'Vertical Force $l_{1}$ $[\mathrm{kN/m}]$')
-ax1.set_ylabel(r'Horizontal Force $l_{2}$ $[\mathrm{kN/m}]$')
-ax1.set_zlabel(r'Internal Moment $M$ $[\mathrm{kNm}]$')
-ax1.set_title(r'$M$ as function of $l_{1}$ and $H$', fontsize=TITLE_FONTSIZE, fontweight='bold')
+ax1.set_xlabel(r'Vertical Force $l_{1}$ $[\mathrm{kN/m}]$', labelpad=12)
+ax1.set_ylabel(r'Horizontal Force $l_{2}$ $[\mathrm{kN/m}]$', labelpad=15)
+ax1.set_zlabel(r'Internal Moment $M$ $[\mathrm{kNm}]$', labelpad=10)
+# negative pad pulls the 3D title down -- Axes3D otherwise reserves extra
+# head-room above the box, which makes the title sit visibly higher than ax2's
+ax1.set_title(r'$M$ as function of $l_{1}$ and $H$', fontsize=TITLE_FONTSIZE, fontweight='bold', pad=-50)
 ax1.view_init(elev=25, azim=225)
+ax1.xaxis.set_major_formatter(ONE_DECIMAL)
+ax1.yaxis.set_major_formatter(ONE_DECIMAL)
+ax1.zaxis.set_major_formatter(ONE_DECIMAL)
 
 # Subplot 2: Contour plot (keeping your existing logic)
-ax2 = fig1.add_subplot(122)
+ax2 = fig1.add_subplot(gs1[1])
 contour = ax2.contourf(V_mesh, H_mesh, M_Th2_mesh, levels=20, cmap='viridis')
 ax2.set_xlabel(r'Vertical Force $l_{1}$ $[\mathrm{kN/m}]$')
 ax2.set_ylabel(r'Horizontal Force $l_{2}$ $[\mathrm{kN/m}]$')
 ax2.set_title(r'Internal Moment $M$ - Contour Plot', fontsize=TITLE_FONTSIZE, fontweight='bold')
-fig1.colorbar(contour, ax=ax2, label=r'$M$ $[\mathrm{kNm}]$')
+cbar = fig1.colorbar(contour, ax=ax2, label=r'$M$ $[\mathrm{kNm}]$', fraction=0.046, pad=0.04)
+cbar.ax.yaxis.set_major_formatter(ONE_DECIMAL)
+ax2.set_box_aspect(1)   # force a square (quadratic) contour panel, regardless of data range
+ax2.xaxis.set_major_formatter(ONE_DECIMAL)
+ax2.yaxis.set_major_formatter(ONE_DECIMAL)
 
-plt.tight_layout()
-fig1.savefig('./plots/fig1_surface_contour.png', dpi=220, bbox_inches='tight', facecolor='white')
-fig1.savefig('./plots/fig1_surface_contour.svg', bbox_inches='tight', facecolor='white')
+# Reserve a modest, fixed left margin for the 3D z-axis label instead of
+# relying on bbox_inches='tight' (which under-measures rotated 3D text and
+# clips it). Kept tighter than before to remove the excess left white space
+# and center the two panels; nudge back up if the z-label starts clipping.
+fig1.subplots_adjust(left=0.07, right=0.90, top=0.90, bottom=0.10)
+fig1.savefig('./plots/fig1_surface_contour.png', dpi=220, facecolor='white')
+fig1.savefig('./plots/fig1_surface_contour.svg', facecolor='white')
 
 # --- FIGURE 2: Extra Pictures (2D Projections) ---
 fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(16, 6))
@@ -444,6 +471,8 @@ ax3.set_ylabel(r'Internal Moment $M$ $[\mathrm{kNm}]$')
 ax3.set_title(r'$M$ as function of $l_{1}$ (Various $l_{2}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
 ax3.grid(True, linestyle='--', alpha=0.6)
 ax3.legend(fontsize='small', loc='upper left')
+ax3.xaxis.set_major_formatter(ONE_DECIMAL)
+ax3.yaxis.set_major_formatter(ONE_DECIMAL)
 
 # Picture 2: H vs M (Looking "front-on" at the 3D plot)
 # We plot multiple lines for different V values
@@ -455,6 +484,8 @@ ax4.set_ylabel(r'Internal Moment $M$ $[\mathrm{kNm}]$')
 ax4.set_title(r'$M$ as function of $l_{2}$ (Various $l_{1}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
 ax4.grid(True, linestyle='--', alpha=0.6)
 ax4.legend(fontsize='small', loc='upper left')
+ax4.xaxis.set_major_formatter(ONE_DECIMAL)
+ax4.yaxis.set_major_formatter(ONE_DECIMAL)
 
 plt.tight_layout()
 

@@ -178,16 +178,16 @@ def t_S(l_1, l_2):
     s.add_dist_load(e15, qz=l_2, local=True)
 
 
-    solver1 = Solver1stOrder()
-    #solver2 = Solver2ndOrder(tol=1e-6, max_iter=50)
+    #solver1 = Solver1stOrder()
+    solver2 = Solver2ndOrder(tol=1e-6, max_iter=50)
 
-    res1 = solver1.solve(s)
-    #res2 = solver2.solve(s)
+    #res1 = solver1.solve(s)
+    res2 = solver2.solve(s)
 
     #res1.print_summary()
     #res2.print_summary()
 
-    M_max = res1.internal_forces(s.elements[14])["M_j"]
+    M_max = res2.internal_forces(s.elements[14])["M_j"]
 
     return M_max
 

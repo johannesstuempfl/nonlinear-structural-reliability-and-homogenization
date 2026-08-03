@@ -1,6 +1,6 @@
 import numpy as np
 from syst_8_measures_of_nonlinearity import y0, kappa_1, kappa_2, kappa_12, r1, r2
-from syst_8_model_functions import t_S_cablenet_linear, t_S_cablenet_nonlinear
+from syst_8_model_functions import t_S_hyperplane_linear, t_S_cablenet_nonlinear
 
 from ERA_Distribution_Classes_Python.Classes.ERADist import ERADist
 from ERA_Distribution_Classes_Python.Classes.ERANataf import ERANataf
@@ -9,7 +9,7 @@ from ERA_Distribution_Classes_Python.Classes.FORM_fmincon import FORM_fmincon
 from ERA_Distribution_Classes_Python.Classes.SuS import SuS
 
 # Vectorized Version of the Structural response function (Better for array handling later)
-t_S_lin_vectorized = np.vectorize(t_S_cablenet_linear, otypes=[float])
+t_S_lin_vectorized = np.vectorize(t_S_hyperplane_linear, otypes=[float])
 
 
 # ---------------------------------------------------------------------------------------
@@ -17,7 +17,8 @@ t_S_lin_vectorized = np.vectorize(t_S_cablenet_linear, otypes=[float])
 
 # Characteristic yield strength in MPa 
 #f_u = 1726.2770986111154 # deprecated! adjusted to eta = 100% for Design Opt 2
-f_u = 2617.8901319049537 # adjusted to eta = 100% for Design Opt 1 TH1 (linear)
+# f_u = 2617.8901319049537 # deprecated! adjusted to eta = 100% for Design Opt 1 TH1 (linear)
+f_u = 1534.3097 # adjusted to eta = 100% for Design Opt 1 TH1 (linear)
 
 # Characteristic Loads in kN/m2
 s_k = 1.1  # snow  (in negative z-direction)
@@ -177,12 +178,12 @@ print(f"m_d = {m_d:.4f} MPa")
 # ---------------------------------------------------------------------------------------
 # Measures of Nonlinearity
 
-y0 = y0(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_linear)
-k1 = kappa_1(l_1k=l_1k, l_1d=l_1d, t_S=t_S_cablenet_linear)
-k2 = kappa_2(l_2k=l_2k, l_2d=l_2d, t_S=t_S_cablenet_linear)
-k12 = kappa_12(l_1k=l_1k, l_1d=l_1d, l_2k=l_2k, l_2d=l_2d, t_S=t_S_cablenet_linear)
-r1 = r1(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_linear)
-r2 = r2(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_linear)
+y0 = y0(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hyperplane_linear)
+k1 = kappa_1(l_1k=l_1k, l_1d=l_1d, t_S=t_S_hyperplane_linear)
+k2 = kappa_2(l_2k=l_2k, l_2d=l_2d, t_S=t_S_hyperplane_linear)
+k12 = kappa_12(l_1k=l_1k, l_1d=l_1d, l_2k=l_2k, l_2d=l_2d, t_S=t_S_hyperplane_linear)
+r1 = r1(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hyperplane_linear)
+r2 = r2(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hyperplane_linear)
 
 print(f"\n")
 print("================================")
@@ -213,16 +214,16 @@ nataf = ERANataf(M=marginal_dist, Correlation=np.eye(len(marginal_dist)))
 # ---------------------------------------------------------------------------------------
 # Design parameters p for option 1 and 2 
 # Design Opt 1
-e_d_1 = t_S_cablenet_linear(l_1d, l_2d)
+e_d_1 = t_S_hyperplane_linear(l_1d, l_2d)
 
 # Design Opt 2
-argument_1 = gamma_F1 * t_S_cablenet_linear(l_1k,  (gamma_F2 / gamma_F1) * l_2k)
-argument_2 = gamma_F2 * t_S_cablenet_linear((gamma_F1 / gamma_F2) * l_1k, l_2k)
+argument_1 = gamma_F1 * t_S_hyperplane_linear(l_1k,  (gamma_F2 / gamma_F1) * l_2k)
+argument_2 = gamma_F2 * t_S_hyperplane_linear((gamma_F1 / gamma_F2) * l_1k, l_2k)
 e_d_2 = max(argument_1, argument_2)
 
 # Design Opt 2'
-argument_1_primed = gamma_F1 * (t_S_cablenet_linear(l_1k,  (gamma_F2 / gamma_F1) * l_2k) - t_S_cablenet_linear(0,0)) + t_S_cablenet_linear(0,0)
-argument_2_primed = gamma_F2 * (t_S_cablenet_linear((gamma_F1 / gamma_F2) * l_1k, l_2k) - t_S_cablenet_linear(0,0)) + t_S_cablenet_linear(0,0)
+argument_1_primed = gamma_F1 * (t_S_hyperplane_linear(l_1k,  (gamma_F2 / gamma_F1) * l_2k) - t_S_hyperplane_linear(0,0)) + t_S_hyperplane_linear(0,0)
+argument_2_primed = gamma_F2 * (t_S_hyperplane_linear((gamma_F1 / gamma_F2) * l_1k, l_2k) - t_S_hyperplane_linear(0,0)) + t_S_hyperplane_linear(0,0)
 e_d_2_primed = max(argument_1_primed, argument_2_primed)
 
 
@@ -277,40 +278,46 @@ def g_opt2_primed_SuS(x):
 # ---------------------------------------------------------------------------------------
 # Subset Simulation
 
+np.random.seed(42)
+
+samples_return = 1
+N  = 10000        # Total number of samples for each level
+p0 = 0.1         # Probability of each subset, chosen adaptively
+
 # # Option 1
-# np.random.seed(42)
-
-# samples_return = 1
-# N  = 10000        # Total number of samples for each level
-# p0 = 0.1         # Probability of each subset, chosen adaptively
-
 # print('\n\nSUBSET SIMULATION OPTION 1: ')
-# [Pf_SuS_1, delta_SuS, b, Pf_1, b_sus, pf_sus, samplesU, samplesX_1, fs_iid] = SuS(N, p0, g_opt1_SuS, nataf, samples_return)
+# [Pf_1_SuS, delta_SuS, b, Pf_1, b_sus, pf_sus, samplesU, samplesX_1, fs_iid] = SuS(N, p0, g_opt1_SuS, nataf, samples_return)
 
-
-# # Option 2 
-# samples_return = 1
-# N  = 10000        # Total number of samples for each level
-# p0 = 0.1         # Probability of each subset, chosen adaptively
-
+# # Option 2
 # print('\n\nSUBSET SIMULATION OPTION 2: ')
-# [Pf_SuS_2, delta_SuS, b, Pf_2, b_sus, pf_sus, samplesU, samplesX_2, fs_iid] = SuS(N, p0, g_opt2_SuS, nataf, samples_return)
+# [Pf_2_SuS, delta_SuS, b, Pf_2, b_sus, pf_sus, samplesU, samplesX_2, fs_iid] = SuS(N, p0, g_opt2_SuS, nataf, samples_return)
+
+# # Option 2' 
+# print('\n\nSUBSET SIMULATION OPTION 2 primed: ')
+# [Pf_2_primed_SuS, delta_SuS, b, Pf_2_primed, b_sus, pf_sus, samplesU, samplesX_2_primed, fs_iid] = SuS(N, p0, g_opt2_primed_SuS, nataf, samples_return)
+
 
 
 
 # print("\n\n=== SUMMARY SUBSET SIMULATION ===")
 
 # print("\nDesign option (1)")
-# print(f"Pr(F) = {Pf_SuS_1}")
+# print(f"Pr(F) = {Pf_1_SuS}")
 # X = ERADist('standardnormal','MOM',[])
-# beta_1_SuS = - X.icdf(Pf_SuS_1)
+# beta_1_SuS = - X.icdf(Pf_1_SuS)
 # print(f"beta = {beta_1_SuS}")
 
 # print("\nDesign option (2)")
-# print(f"Pr(F) = {Pf_SuS_2}")
+# print(f"Pr(F) = {Pf_2_SuS}")
 # X = ERADist('standardnormal','MOM',[])
-# beta_2_SuS = - X.icdf(Pf_SuS_2)
+# beta_2_SuS = - X.icdf(Pf_2_SuS)
 # print(f"beta = {beta_2_SuS}")
+
+# print("\nDesign option (2')")
+# print(f"Pr(F) = {Pf_2_primed_SuS}")
+# X = ERADist('standardnormal','MOM',[])
+# beta_2_primed_SuS = - X.icdf(Pf_2_primed_SuS)
+# print(f"beta = {beta_2_primed_SuS}")
 
 
 
@@ -340,19 +347,20 @@ def g_opt2_primed_FORM(x):
 
 # ---------------------------------------------------------------------------------------
 # FORM via fmincon  
+
 print("\n=== FORM (fmincon) - Design option (1) ===")
 [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
     g=g_opt1_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
 
-# FORM via fmincon  
-print("\n=== FORM (fmincon) - Design option (2) ===")
-[u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
-    g=g_opt2_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
+# # FORM via fmincon  
+# print("\n=== FORM (fmincon) - Design option (2) ===")
+# [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
+#     g=g_opt2_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
 
-# FORM via fmincon  
-print("\n=== FORM (fmincon) - Design option (2') ===")
-[u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
-    g=g_opt2_primed_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
+# # FORM via fmincon  
+# print("\n=== FORM (fmincon) - Design option (2') ===")
+# [u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
+#     g=g_opt2_primed_FORM, dg=[] , distr=nataf, u0=0, maxit=60, tol=1e-6)
 
 
 print("\n\n=== SUMMARY ===")
@@ -362,14 +370,14 @@ print(f"beta_1 = {beta_1}")
 print(f"x_star_1 = {x_star_1}")
 print(f"(alpha_1)^2 = {(u_star_1/beta_1)**2}")
 
-print("\n\nDesign option (2)")
-print(f"Pf_2 = {Pf_2}")
-print(f"beta_2 = {beta_2}") 
-print(f"x_star_2 = {x_star_2}")
-print(f"(alpha_2)^2 = {(u_star_2/beta_2)**2}")
+# print("\n\nDesign option (2)")
+# print(f"Pf_2 = {Pf_2}")
+# print(f"beta_2 = {beta_2}") 
+# print(f"x_star_2 = {x_star_2}")
+# print(f"(alpha_2)^2 = {(u_star_2/beta_2)**2}")
 
-print("\n\nDesign option (2')")
-print(f"Pf_2' = {Pf_2_primed}")
-print(f"beta_2' = {beta_2_primed}") 
-print(f"x_star_2' = {x_star_2_primed}")
-print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
+# print("\n\nDesign option (2')")
+# print(f"Pf_2' = {Pf_2_primed}")
+# print(f"beta_2' = {beta_2_primed}") 
+# print(f"x_star_2' = {x_star_2_primed}")
+# print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")

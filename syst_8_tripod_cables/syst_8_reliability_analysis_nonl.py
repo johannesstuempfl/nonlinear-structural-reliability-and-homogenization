@@ -1,6 +1,6 @@
 import numpy as np
 from syst_8_measures_of_nonlinearity import y0, kappa_1, kappa_2, kappa_12, r1, r2
-from syst_8_model_functions import t_S_cablenet_linear, t_S_cablenet_nonlinear
+from syst_8_model_functions import t_S_cablenet_nonlinear
 
 from ERA_Distribution_Classes_Python.Classes.ERADist import ERADist
 from ERA_Distribution_Classes_Python.Classes.ERANataf import ERANataf
@@ -17,7 +17,9 @@ t_S_nonl_vectorized = np.vectorize(t_S_cablenet_nonlinear, otypes=[float])
 
 # Characteristic yield strength in MPa 
 # f_u = 1726.2770986111154 # deprecated! adjusted to eta = 100% for Design Opt 2
-f_u = 2617.8901319049537 # adjusted to eta = 100% for Design Opt 1 TH1 (linear)
+# f_u = 2617.8901319049537 # deprecated! adjusted to eta = 100% for Design Opt 1 TH1 (linear)
+f_u = 1534.3097 # adjusted to eta = 100% for Design Opt 1 TH1 (linear)
+
 # Characteristic Loads in kN/m2
 s_k = 1.1  # snow  (in negative z-direction)
 q_b = 0.65 # wind pressure (in negative y-direction)
@@ -220,8 +222,8 @@ argument_2 = gamma_F2 * t_S_cablenet_nonlinear(F_Z=(gamma_F1/gamma_F2) * l_1k, F
 e_d_opt2 = max(argument_1, argument_2) # kN/m
 
 # Design Opt 2'
-argument_1_primed = gamma_F1 * (t_S_cablenet_nonlinear(l_1k,  (gamma_F2 / gamma_F1) * l_2k) - t_S_cablenet_linear(0,0)) + t_S_cablenet_linear(0,0)
-argument_2_primed = gamma_F2 * (t_S_cablenet_nonlinear((gamma_F1 / gamma_F2) * l_1k, l_2k) - t_S_cablenet_linear(0,0)) + t_S_cablenet_linear(0,0)
+argument_1_primed = gamma_F1 * (t_S_cablenet_nonlinear(l_1k,  (gamma_F2 / gamma_F1) * l_2k) - t_S_cablenet_nonlinear(0,0)) + t_S_cablenet_nonlinear(0,0)
+argument_2_primed = gamma_F2 * (t_S_cablenet_nonlinear((gamma_F1 / gamma_F2) * l_1k, l_2k) - t_S_cablenet_nonlinear(0,0)) + t_S_cablenet_nonlinear(0,0)
 e_d_2_primed = max(argument_1_primed, argument_2_primed)
 
 
@@ -290,14 +292,14 @@ p0 = 0.1         # Probability of each subset, chosen adaptively
 # print('\n\nSUBSET SIMULATION OPTION 2: ')
 # [Pf_2_SuS, delta_SuS, b, Pf_2, b_sus, pf_sus, samplesU, samplesX_2, fs_iid] = SuS(N, p0, g_opt2_SuS, nataf, samples_return)
 
-# Option 2' 
-print('\n\nSUBSET SIMULATION OPTION 2: ')
-[Pf_2_primed_SuS, delta_SuS, b, Pf_2_primed, b_sus, pf_sus, samplesU, samplesX_2_primed, fs_iid] = SuS(N, p0, g_opt2_primed_SuS, nataf, samples_return)
+# # Option 2' 
+# print('\n\nSUBSET SIMULATION OPTION 2 primed: ')
+# [Pf_2_primed_SuS, delta_SuS, b, Pf_2_primed, b_sus, pf_sus, samplesU, samplesX_2_primed, fs_iid] = SuS(N, p0, g_opt2_primed_SuS, nataf, samples_return)
 
 
 
 
-print("\n\n=== SUMMARY SUBSET SIMULATION ===")
+# print("\n\n=== SUMMARY SUBSET SIMULATION ===")
 
 # print("\nDesign option (1)")
 # print(f"Pr(F) = {Pf_1_SuS}")
@@ -311,11 +313,11 @@ print("\n\n=== SUMMARY SUBSET SIMULATION ===")
 # beta_2_SuS = - X.icdf(Pf_2_SuS)
 # print(f"beta = {beta_2_SuS}")
 
-print("\nDesign option (2')")
-print(f"Pr(F) = {Pf_2_primed_SuS}")
-X = ERADist('standardnormal','MOM',[])
-beta_2_primed_SuS = - X.icdf(Pf_2_primed_SuS)
-print(f"beta = {beta_2_primed_SuS}")
+# print("\nDesign option (2')")
+# print(f"Pr(F) = {Pf_2_primed_SuS}")
+# X = ERADist('standardnormal','MOM',[])
+# beta_2_primed_SuS = - X.icdf(Pf_2_primed_SuS)
+# print(f"beta = {beta_2_primed_SuS}")
 
 
 
@@ -381,14 +383,14 @@ def g_opt2_primed_FORM(x):
 # print(f"x_star_2' = {x_star_2_primed}")
 # print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
 
+
 # ---------------------------------------------------------------------------------------
 # Safety Homogenization towards TH1 Design Opt 1
 from scipy.optimize import brentq
 
-# Target Reliabilities from TH1
-beta_TRG_opt1 = 5.4343284907367915 # this is the one i am homogenizing towards
-beta_TRG_opt2 = 5.593444668051576
-beta_TRG_opt2_primed = 5.434328491493094
+# Target Reliability from TH1
+beta_TRG = 5.358605291098258
+
 
 # # Objective Function TH3 Opt 1
 # def f(gamma_new):
@@ -400,7 +402,7 @@ beta_TRG_opt2_primed = 5.434328491493094
 #         return resistance_side - action_side
 
 #     [u_star, x_star, beta, alpha, Pf] = FORM_fmincon(g=g_opt_1, dg=[], distr=nataf)
-#     return beta - beta_TRG_opt1
+#     return beta - beta_TRG
 
 # # # this is for narrowing down the lower and upper bound of where brentq should search in the input space
 # # for g in [0.90, 0.91, 0.92, 0.93]:
@@ -408,7 +410,7 @@ beta_TRG_opt2_primed = 5.434328491493094
 
 
 # # Finding the Root (Optimization Problem)
-# gamma_new_1 = brentq(f, 0.91, 0.92)
+# gamma_new_1 = brentq(f, 0.90, 0.91)
 
 
 # # Verification of gamma_new_1
@@ -434,18 +436,18 @@ beta_TRG_opt2_primed = 5.434328491493094
 #         return resistance_side - action_side
 
 #     [u_star, x_star, beta, alpha, Pf] = FORM_fmincon(g=g_opt_2, dg=[], distr=nataf)
-#     return beta - beta_TRG_opt1
+#     return beta - beta_TRG
 
 # # # this is for narrowing down the lower and upper bound of where brentq should search in the input space
-# # for g in [0.78, 0.79, 0.80]:
+# # for g in [0.76, 0.77, 0.78]:
 # #     print(g, f(g))
 
 
 # # Finding the Root (Optimization Problem)
-# gamma_new_2 = brentq(f, 0.78, 0.79)
+# gamma_new_2 = brentq(f, 0.76, 0.77)
 
 
-# # Verification of gamma_new_1
+# # Verification of gamma_new_2
 # def g_opt2_FORM_verification(x):
     
 #     resistance_side = p_opt2 * gamma_new_2 * x[0] * x[1]
@@ -469,18 +471,18 @@ beta_TRG_opt2_primed = 5.434328491493094
 #         return resistance_side - action_side
 
 #     [u_star, x_star, beta, alpha, Pf] = FORM_fmincon(g=g_opt_2_primed, dg=[], distr=nataf)
-#     return beta - beta_TRG_opt1
+#     return beta - beta_TRG
 
 # # # this is for narrowing down the lower and upper bound of where brentq should search in the input space
-# # for g in [0.84, 0.85, 0.86]:
+# # for g in [0.82, 0.83, 0.84]:
 # #     print(g, f(g))
 
 
 # # Finding the Root (Optimization Problem)
-# gamma_new_2_primed = brentq(f, 0.84, 0.85)
+# gamma_new_2_primed = brentq(f, 0.83, 0.84)
 
 
-# # Verification of gamma_new_1
+# # Verification of gamma_new_2'
 # def g_opt2_primed_FORM_verification(x):
     
 #     resistance_side = p_opt2_primed * gamma_new_2_primed * x[0] * x[1]
@@ -502,26 +504,26 @@ beta_TRG_opt2_primed = 5.434328491493094
 # print("\n\n=== SUMMARY SAFETY HOMOGENIZATION ===")
 # print(f"\n")
 # print("================================")
-# print("Safety Homogenization towards TH1 Design Opt 1")
+# print("Safety Homogenization towards TH1")
 # print("================================")
 
 # print(f"\n")
 # print(f"TH3 Design Option 1")
 # print(f"gamma_new = {gamma_new_1}")
-# print(f"Target Reliability Index: {beta_TRG_opt1}")
+# print(f"Target Reliability Index: {beta_TRG}")
 # print(f"Optimized Reliability Index: {beta_1_ver}")
-# print(f"Difference: {beta_1_ver - beta_TRG_opt1}")
+# print(f"Difference: {beta_1_ver - beta_TRG}")
 
 # print(f"\n")
 # print(f"TH3 Design Option 2")
 # print(f"gamma_new = {gamma_new_2}")
-# print(f"Target Reliability Index: {beta_TRG_opt1}")
+# print(f"Target Reliability Index: {beta_TRG}")
 # print(f"Optimized Reliability Index: {beta_2_ver}")
-# print(f"Difference: {beta_2_ver - beta_TRG_opt1}")
+# print(f"Difference: {beta_2_ver - beta_TRG}")
 
 # print(f"\n")
 # print(f"TH3 Design Option 2'")
 # print(f"gamma_new = {gamma_new_2_primed}")
-# print(f"Target Reliability Index: {beta_TRG_opt1}")
+# print(f"Target Reliability Index: {beta_TRG}")
 # print(f"Optimized Reliability Index: {beta_2_primed_ver}")
-# print(f"Difference: {beta_2_primed_ver - beta_TRG_opt1}")
+# print(f"Difference: {beta_2_primed_ver - beta_TRG}")

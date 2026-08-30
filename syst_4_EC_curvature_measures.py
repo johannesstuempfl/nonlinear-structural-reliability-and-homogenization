@@ -1,37 +1,26 @@
 from measures_of_nonlinearity import kappa_1, kappa_2, kappa_12, r1, r2
 from syst_4_model_functions import t_S_linear, t_S_nonlinear
 
-# NEW modified IPE 120 -> eta = 100% for Th.I.O.
+# # NEW modified IPE 120 -> eta = 100% for Th.I.O.
+# E = 210e6 # kN/m2 
+# A = 1.321e-3 # m2
+# I = 0.2740555e-5 # m4
+# h = 0.12  # m
+# z = h/2  # m
+# sigma_yield = 35.5 # kN/cm2 
+# alpha = 1.14
+# M_yield = I/z * sigma_yield * 100e2 * 1.14 # kNm
+
+# approximately resembles an IPE 120
 E = 210e6 # kN/m2 
 A = 1.321e-3 # m2
-I = 0.2740555e-5 # m4
+I = 0.318e-5 # m4
 h = 0.12  # m
 z = h/2  # m
 sigma_yield = 35.5 # kN/cm2 
 alpha = 1.14
-M_yield = I/z * sigma_yield * 100e2 * 1.14 # kNm
+M_yield = I/z * sigma_yield * 100e2 * alpha # kNm
 
-
-# Node 1 
-x_1 = 0.0
-z_1 = 0.0
-# Node 2
-x_2 = 0.1
-z_2 = -3.0
-# Node 3
-x_3 = 3.6
-z_3 = -3.0
-
-# Outer dimensions for beam 1
-delta_x_1 = x_2 - x_1
-delta_z_1 = z_2 - z_1
-
-# Outer dimensions for beam 2
-delta_x_2 = x_3 - x_2
-delta_z_2 = z_3 - z_2
-
-
-e = 5 # load distribution length in m
 
 
 s_k = 1.1  # snow kN/m2

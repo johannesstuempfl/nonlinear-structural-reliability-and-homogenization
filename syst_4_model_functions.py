@@ -5,15 +5,26 @@ from buckling_analysis import BucklingAnalysis
 import numpy as np
 import matplotlib.pyplot as plt
 
-# NEW modified IPE 120 -> eta = 100% for Th.I.O.
+# # NEW modified IPE 120 -> eta = 100% for Th.I.O.
+# E = 210e6 # kN/m2 
+# A = 1.321e-3 # m2
+# I = 0.2740555e-5 # m4
+# h = 0.12  # m
+# z = h/2  # m
+# sigma_yield = 35.5 # kN/cm2 
+# alpha = 1.14
+# M_yield = I/z * sigma_yield * 100e2 * 1.14 # kNm
+
+# approximately resembles an IPE 120
 E = 210e6 # kN/m2 
 A = 1.321e-3 # m2
-I = 0.2740555e-5 # m4
+I = 0.318e-5 # m4
 h = 0.12  # m
 z = h/2  # m
 sigma_yield = 35.5 # kN/cm2 
 alpha = 1.14
-M_yield = I/z * sigma_yield * 100e2 * 1.14 # kNm
+M_yield = I/z * sigma_yield * 100e2 * alpha # kNm
+
 
 
 # Node 1 
@@ -43,6 +54,7 @@ c_pe = 0.8
 
 def t_S_linear(l_1, l_2, e=e, c_pe=c_pe):
     """
+    DEPRECATED !!
     l_1 = vertical load in kN/m2
     l_2 = horizontal load in kN/m2
     e = Load Distribution Length (Lasteinzugsbreite)
@@ -175,6 +187,49 @@ def t_S_linear(l_1, l_2, e=e, c_pe=c_pe):
     M_max = res1.internal_forces(s.elements[14])["M_j"]
 
     return M_max
+
+
+def t_S_hyperplane_linear(l_1, l_2) -> float:
+    """
+    This is the linear hyperplane function for the cablenet structure. 
+    It is constructed as follows: 
+    First, the plane is defined trough the three points: p1, p2, p3 which correspond to t_S(0,0), t_S(l1k,0), t_S(0,l2k). 
+    Then, t_S(0,0) is subtracted.
+    """
+    
+    # Here are the results of the nonlinear model. They serve for calibrating this linear hyperplane.
+    l1k = 1.1                       # kN/m2
+    l2k = 0.65                      # kN/m2
+    t_S_l1k_0 = 1.442207357172265   # kNm
+    t_S_0_l2k = 11.020249560912257  # kNm
+    t_S_0_0 = 0.0           # kNm
+    
+    
+    # Constructing the array representation of the three points, which define the plane
+    p1 = np.array([0, 0 , t_S_0_0])
+    p2 = np.array([l1k, 0 , t_S_l1k_0])
+    p3 = np.array([0, l2k , t_S_0_l2k])
+    
+    # Form the edge vectors 
+    v1 = p2 - p1 
+    v2 = p3 - p1
+    
+    # Normal Vector via cross product 
+    n = np.cross(v1, v2)
+    
+    # Expanding with n = (a,b,c) and d = n * p1
+    a, b, c = n
+    d = n @ p1
+    
+    # Getting the slopes m1 and m2 in l1 and l2 direction as well as the z-intercept z0
+    m1 = -a/c
+    m2 = -b/c
+    z0 = d/c
+    
+    # Hyperplane function
+    z = m1 * l_1 + m2 * l_2 + z0 - t_S_0_0
+    
+    return z 
 
 
 def t_S_nonlinear(l_1, l_2, e=e, c_pe=c_pe): 
@@ -311,3 +366,8 @@ def t_S_nonlinear(l_1, l_2, e=e, c_pe=c_pe):
     M_max = res2.internal_forces(s.elements[14])["M_j"]
 
     return M_max
+
+
+# # Verification of t_S_hyperplane_linear
+# print(t_S_hyperplane_linear(l_1=1.1, l_2=0.0)) # should give 1.442
+# print(t_S_hyperplane_linear(l_1=0.0, l_2=0.65)) # should give 11.020

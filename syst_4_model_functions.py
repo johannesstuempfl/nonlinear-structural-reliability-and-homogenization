@@ -15,16 +15,25 @@ import matplotlib.pyplot as plt
 # alpha = 1.14
 # M_yield = I/z * sigma_yield * 100e2 * 1.14 # kNm
 
-# approximately resembles an IPE 120
+# # approximately resembles an IPE 120
+# E = 210e6 # kN/m2 
+# A = 1.321e-3 # m2
+# I = 0.318e-5 # m4
+# h = 0.12  # m
+# z = h/2  # m
+# sigma_yield = 35.5 # kN/cm2 
+# alpha = 1.14
+# M_yield = I/z * sigma_yield * 100e2 * alpha # kNm
+
+# intermediate modified IPE 120 -> eta = 100% for linear hyperplane
 E = 210e6 # kN/m2 
 A = 1.321e-3 # m2
-I = 0.318e-5 # m4
+I = 2.7784576742780014e-06 # m4
 h = 0.12  # m
 z = h/2  # m
 sigma_yield = 35.5 # kN/cm2 
 alpha = 1.14
 M_yield = I/z * sigma_yield * 100e2 * alpha # kNm
-
 
 
 # Node 1 
@@ -200,8 +209,9 @@ def t_S_hyperplane_linear(l_1, l_2) -> float:
     # Here are the results of the nonlinear model. They serve for calibrating this linear hyperplane.
     l1k = 1.1                       # kN/m2
     l2k = 0.65                      # kN/m2
-    t_S_l1k_0 = 1.442207357172265   # kNm
-    t_S_0_l2k = 11.020249560912257  # kNm
+    t_S_l1k_0 = 1.521903900412326 # kNm
+    t_S_0_l2k = 10.971906842505982 # kNm
+    
     t_S_0_0 = 0.0           # kNm
     
     
@@ -367,7 +377,3 @@ def t_S_nonlinear(l_1, l_2, e=e, c_pe=c_pe):
 
     return M_max
 
-
-# # Verification of t_S_hyperplane_linear
-# print(t_S_hyperplane_linear(l_1=1.1, l_2=0.0)) # should give 1.442
-# print(t_S_hyperplane_linear(l_1=0.0, l_2=0.65)) # should give 11.020

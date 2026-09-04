@@ -4,15 +4,15 @@ from solver_2nd import Solver2ndOrder
 import numpy as np
 import matplotlib.pyplot as plt
 
-# NEW modified IPE 120 -> eta = 100% for Th.I.O.
+# intermediate modified IPE 120 -> eta = 100% for linear hyperplane
 E = 210e6 # kN/m2 
 A = 1.321e-3 # m2
-I = 0.2740555e-5 # m4
+I = 2.7784576742780014e-06 # m4
 h = 0.12  # m
 z = h/2  # m
 sigma_yield = 35.5 # kN/cm2 
 alpha = 1.14
-M_yield = I/z * sigma_yield * 100e2 * 1.14 # kNm
+M_yield = I/z * sigma_yield * 100e2 * alpha # kNm
 
 
 # Node 1 
@@ -34,8 +34,11 @@ delta_x_2 = x_3 - x_2
 delta_z_2 = z_3 - z_2
 
 
-l_1d = 8.25
-l_2d = 3.9
+# l_1d = 8.25 # kN/m
+# l_2d = 3.9  # kN/m
+
+l_1d = 1.65 # kN/m2
+l_2d = 0.78 # kN/m2
 
 V_range = np.linspace(0, l_1d * 1.0, 20)
 H_range = np.linspace(0, l_2d * 1.0, 20)
@@ -48,8 +51,8 @@ M_Th2_mesh = np.zeros_like(V_mesh)
 
 for i in range(len(V_range)):
         for j in range(len(H_range)):
-            V_val = V_mesh[i, j]
-            H_val = H_mesh[i, j]
+            V_val = V_mesh[i, j] * 5 # with load distribution length of 5 m
+            H_val = H_mesh[i, j] * 5 # with load distribution length of 5 m
             
             s = Structure()
             # Stab 1 
@@ -185,8 +188,8 @@ for i in range(len(V_range)):
 
 for i in range(len(V_range)):
         for j in range(len(H_range)):
-            V_val = V_mesh[i, j]
-            H_val = H_mesh[i, j]
+            V_val = V_mesh[i, j] * 5 # with load distribution length of 5 m
+            H_val = H_mesh[i, j] * 5 # with load distribution length of 5 m
             
             s = Structure()
             # Stab 1 
@@ -350,12 +353,12 @@ ax1 = fig1.add_subplot(gs1[0], projection='3d')
 surf2 = ax1.plot_surface(V_mesh, H_mesh, M_Th2_mesh, cmap='viridis',
                          edgecolor='none', alpha=0.7, label='TH2')
 
-ax1.set_xlabel(r'Vertical Force $l_{1}$ $[\mathrm{kN/m}]$', labelpad=12)
-ax1.set_ylabel(r'Horizontal Force $l_{2}$ $[\mathrm{kN/m}]$', labelpad=15)
-ax1.set_zlabel(r'Internal Moment $M$ $[\mathrm{kNm}]$', labelpad=10)
+ax1.set_xlabel(r'Snow load $l_{1}$ $[\mathrm{kN/m^2}]$', labelpad=12)
+ax1.set_ylabel(r'Wind load $l_{2}$ $[\mathrm{kN/m^2}]$', labelpad=15)
+ax1.set_zlabel(r'Internal moment $M$ $[\mathrm{kNm}]$', labelpad=10)
 # negative pad pulls the 3D title down -- Axes3D otherwise reserves extra
 # head-room above the box, which makes the title sit visibly higher than ax2's
-ax1.set_title(r'$M$ as function of $l_{1}$ and $l_{2}$', fontsize=TITLE_FONTSIZE, fontweight='bold', pad=-50)
+#ax1.set_title(r'$M$ as function of $l_{1}$ and $l_{2}$', fontsize=TITLE_FONTSIZE, fontweight='bold', pad=-50)
 ax1.view_init(elev=25, azim=225)
 ax1.xaxis.set_major_formatter(ONE_DECIMAL)
 ax1.yaxis.set_major_formatter(ONE_DECIMAL)
@@ -364,10 +367,10 @@ ax1.zaxis.set_major_formatter(ONE_DECIMAL)
 # Subplot 2: Contour plot (keeping your existing logic)
 ax2 = fig1.add_subplot(gs1[1])
 contour = ax2.contourf(V_mesh, H_mesh, M_Th2_mesh, levels=20, cmap='viridis')
-ax2.set_xlabel(r'Vertical Force $l_{1}$ $[\mathrm{kN/m}]$')
-ax2.set_ylabel(r'Horizontal Force $l_{2}$ $[\mathrm{kN/m}]$')
-ax2.set_title(r'Internal Moment $M$ - Contour Plot', fontsize=TITLE_FONTSIZE, fontweight='bold')
-cbar = fig1.colorbar(contour, ax=ax2, label=r'$M$ $[\mathrm{kNm}]$', fraction=0.046, pad=0.04)
+ax2.set_xlabel(r'Snow load $l_{1}$ $[\mathrm{kN/m^2}]$')
+ax2.set_ylabel(r'Wind load $l_{2}$ $[\mathrm{kN/m^2}]$')
+#ax2.set_title(r'Internal Moment $M$ - Contour Plot', fontsize=TITLE_FONTSIZE, fontweight='bold')
+cbar = fig1.colorbar(contour, ax=ax2, label=r'Internal moment $M$ $[\mathrm{kNm}]$', fraction=0.046, pad=0.04)
 cbar.ax.yaxis.set_major_formatter(ONE_DECIMAL)
 ax2.set_box_aspect(1)   # force a square (quadratic) contour panel, regardless of data range
 ax2.xaxis.set_major_formatter(ONE_DECIMAL)
@@ -389,9 +392,9 @@ fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(16, 6))
 for i in range(0, len(H_range), 4): # Plot every 4th H-level for clarity
     ax3.plot(V_range, M_Th2_mesh[i, :], label=fr'$l_{2} = {H_range[i]:.1f}\ \mathrm{{kN/m}}$')
 
-ax3.set_xlabel(r'Vertical Force $l_{1}$ $[\mathrm{kN/m}]$')
-ax3.set_ylabel(r'Internal Moment $M$ $[\mathrm{kNm}]$')
-ax3.set_title(r'$M$ as function of $l_{1}$ (Various $l_{2}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
+ax3.set_xlabel(r'Snow load $l_{1}$ $[\mathrm{kN/m^2}]$')
+ax3.set_ylabel(r'Internal moment $M$ $[\mathrm{kNm}]$')
+ax3.set_title(r'$M$ as function of $l_{1}$ (various $l_{2}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
 ax3.grid(True, linestyle='--', alpha=0.6)
 ax3.legend(fontsize='small', loc='upper left')
 ax3.xaxis.set_major_formatter(ONE_DECIMAL)
@@ -402,9 +405,9 @@ ax3.yaxis.set_major_formatter(ONE_DECIMAL)
 for i in range(0, len(V_range), 4): # Plot every 4th V-level
     ax4.plot(H_range, M_Th2_mesh[:, i], label=fr'$l_{1} = {V_range[i]:.1f}\ \mathrm{{kN/m}}$')
 
-ax4.set_xlabel(r'Horizontal Force $l_{2}$ $[\mathrm{kN/m}]$')
-ax4.set_ylabel(r'Internal Moment $M$ $[\mathrm{kNm}]$')
-ax4.set_title(r'$M$ as function of $l_{2}$ (Various $l_{1}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
+ax4.set_xlabel(r'Wind load $l_{2}$ $[\mathrm{kN/m^2}]$')
+ax4.set_ylabel(r'Internal moment $M$ $[\mathrm{kNm}]$')
+ax4.set_title(r'$M$ as function of $l_{2}$ (various $l_{1}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
 ax4.grid(True, linestyle='--', alpha=0.6)
 ax4.legend(fontsize='small', loc='upper left')
 ax4.xaxis.set_major_formatter(ONE_DECIMAL)

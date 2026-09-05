@@ -38,10 +38,17 @@ delta_z_2 = z_3 - z_2
 # l_2d = 3.9  # kN/m
 
 l_1d = 1.65 # kN/m2
-l_2d = 0.78 # kN/m2
+l_2d = 0.975 # kN/m2
 
-V_range = np.linspace(0, l_1d * 1.0, 20)
-H_range = np.linspace(0, l_2d * 1.0, 20)
+# --- Points to highlight on the 2D section plots ---
+# Points on the l_1 section (l_2 = 0), given as l_1 values [kN/m^2]
+L1_POINTS = [1.1, 1.65]
+
+# Points on the l_2 section (l_1 = 0), given as l_2 values [kN/m^2]
+L2_POINTS = [0.65, 0.975]
+
+V_range = np.linspace(0, l_1d * 1.1, 20)
+H_range = np.linspace(0, l_2d * 1.1, 20)
 
 # Create meshgrid for 3D plotting
 V_mesh, H_mesh = np.meshgrid(V_range, H_range)
@@ -384,36 +391,103 @@ fig1.subplots_adjust(left=0.07, right=0.90, top=0.90, bottom=0.10)
 fig1.savefig('./syst_4_plots/fig1_surface_contour.png', dpi=220, facecolor='white')
 fig1.savefig('./syst_4_plots/fig1_surface_contour.svg', facecolor='white')
 
-# --- FIGURE 2: Extra Pictures (2D Projections) ---
-fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(16, 6))
+# # --- FIGURE 2: Extra Pictures (2D Projections) ---
+# fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(16, 6))
 
-# Picture 1: V vs M (Looking "sideways" at the 3D plot)
-# We plot multiple lines for different H values to show the trend
-for i in range(0, len(H_range), 4): # Plot every 4th H-level for clarity
-    ax3.plot(V_range, M_Th2_mesh[i, :], label=fr'$l_{2} = {H_range[i]:.1f}\ \mathrm{{kN/m}}$')
+# # Picture 1: V vs M (Looking "sideways" at the 3D plot)
+# # We plot multiple lines for different H values to show the trend
+# for i in range(0, len(H_range), 4): # Plot every 4th H-level for clarity
+#     ax3.plot(V_range, M_Th2_mesh[i, :], label=fr'$l_{2} = {H_range[i]:.2f}\ \mathrm{{kN/m}}$')
 
-ax3.set_xlabel(r'Snow load $l_{1}$ $[\mathrm{kN/m^2}]$')
-ax3.set_ylabel(r'Internal moment $M$ $[\mathrm{kNm}]$')
-ax3.set_title(r'$M$ as function of $l_{1}$ (various $l_{2}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
-ax3.grid(True, linestyle='--', alpha=0.6)
-ax3.legend(fontsize='small', loc='upper left')
-ax3.xaxis.set_major_formatter(ONE_DECIMAL)
-ax3.yaxis.set_major_formatter(ONE_DECIMAL)
+# ax3.set_xlabel(r'Snow load $l_{1}$ $[\mathrm{kN/m^2}]$')
+# ax3.set_ylabel(r'Internal moment $M$ $[\mathrm{kNm}]$')
+# ax3.set_title(r'$M$ as function of $l_{1}$ (various $l_{2}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
+# ax3.grid(True, linestyle='--', alpha=0.6)
+# ax3.legend(fontsize='small', loc='upper left')
+# ax3.xaxis.set_major_formatter(ONE_DECIMAL)
+# ax3.yaxis.set_major_formatter(ONE_DECIMAL)
 
-# Picture 2: H vs M (Looking "front-on" at the 3D plot)
-# We plot multiple lines for different V values
-for i in range(0, len(V_range), 4): # Plot every 4th V-level
-    ax4.plot(H_range, M_Th2_mesh[:, i], label=fr'$l_{1} = {V_range[i]:.1f}\ \mathrm{{kN/m}}$')
+# # Picture 2: H vs M (Looking "front-on" at the 3D plot)
+# # We plot multiple lines for different V values
+# for i in range(0, len(V_range), 4): # Plot every 4th V-level
+#     ax4.plot(H_range, M_Th2_mesh[:, i], label=fr'$l_{1} = {V_range[i]:.2f}\ \mathrm{{kN/m}}$')
 
-ax4.set_xlabel(r'Wind load $l_{2}$ $[\mathrm{kN/m^2}]$')
-ax4.set_ylabel(r'Internal moment $M$ $[\mathrm{kNm}]$')
-ax4.set_title(r'$M$ as function of $l_{2}$ (various $l_{1}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
-ax4.grid(True, linestyle='--', alpha=0.6)
-ax4.legend(fontsize='small', loc='upper left')
-ax4.xaxis.set_major_formatter(ONE_DECIMAL)
-ax4.yaxis.set_major_formatter(ONE_DECIMAL)
+# ax4.set_xlabel(r'Wind load $l_{2}$ $[\mathrm{kN/m^2}]$')
+# ax4.set_ylabel(r'Internal moment $M$ $[\mathrm{kNm}]$')
+# ax4.set_title(r'$M$ as function of $l_{2}$ (various $l_{1}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
+# ax4.grid(True, linestyle='--', alpha=0.6)
+# ax4.legend(fontsize='small', loc='upper left')
+# ax4.xaxis.set_major_formatter(ONE_DECIMAL)
+# ax4.yaxis.set_major_formatter(ONE_DECIMAL)
 
-plt.tight_layout()
+# plt.tight_layout()
 
-fig2.savefig('./syst_4_plots/fig2_projections.png', dpi=220, bbox_inches='tight', facecolor='white')
-fig2.savefig('./syst_4_plots/fig2_projections.svg', bbox_inches='tight', facecolor='white')
+# fig2.savefig('./syst_4_plots/fig2_projections.png', dpi=220, bbox_inches='tight', facecolor='white')
+# fig2.savefig('./syst_4_plots/fig2_projections.svg', bbox_inches='tight', facecolor='white')
+
+import matplotlib.transforms as mtransforms
+
+def style_arrow_axes(ax):
+    """Open axes: spines only at x=0/y=0, arrowheads at the positive ends."""
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_position(('data', 0))
+    ax.spines['bottom'].set_position(('data', 0))
+    ax.set_xlim(left=0)
+    ax.set_ylim(bottom=0)
+    ax.plot(1, 0, ">k", transform=ax.get_yaxis_transform(), clip_on=False, markersize=8)
+    ax.plot(0, 1, "^k", transform=ax.get_xaxis_transform(), clip_on=False, markersize=8)
+
+def label_arrow_axes(ax, xlabel, ylabel):
+    """x-label above (and shifted right of) the x-arrow tip; y-label horizontal, right of the y-arrow tip."""
+    trans_x = mtransforms.offset_copy(ax.get_yaxis_transform(), fig=ax.figure, x=60, y=6, units='points')
+    ax.text(1.0, 0.0, xlabel, transform=trans_x, ha='right', va='bottom')
+
+    trans_y = mtransforms.offset_copy(ax.get_xaxis_transform(), fig=ax.figure, x=10, y=0, units='points')
+    ax.text(0.0, 1.0, ylabel, transform=trans_y, ha='left', va='center', rotation=0)
+    
+# Interpolated M-values at the highlighted points, from the l_2=0 / l_1=0 sections
+L1_POINTS_M = np.interp(L1_POINTS, V_range, M_Th2_mesh[0, :])
+L2_POINTS_M = np.interp(L2_POINTS, H_range, M_Th2_mesh[:, 0])
+
+def add_origin_line(ax, x1, y1):
+    """Thin dashed straight line through the origin and (x1, y1), spanning the full x-range."""
+    x_max = ax.get_xlim()[1]
+    slope = y1 / x1
+    ax.plot([0, x_max], [0, slope * x_max], color='black', linewidth=0.8, linestyle='--', zorder=1)
+
+def add_point_guides(ax, xs, ys):
+    """Solid vertical line up to the curve, dashed horizontal line back to the y-axis."""
+    for x0, y0 in zip(xs, ys):
+        ax.plot([x0, x0], [0, y0], color='black', linewidth=1.0, zorder=3)
+        ax.plot([0, x0], [y0, y0], color='black', linewidth=1.0, linestyle='-', zorder=3)
+
+# --- FIGURE 2a: M vs l_1, section at l_2 = 0.0 ---
+fig2a, ax_l1 = plt.subplots(figsize=(8, 6))
+ax_l1.plot(V_range, M_Th2_mesh[0, :], color='black')
+style_arrow_axes(ax_l1)
+add_origin_line(ax_l1, L1_POINTS[0], L1_POINTS_M[0])
+label_arrow_axes(ax_l1, r'$l_{1}\ [\mathrm{kN/m^2}]$', r'$M\ [\mathrm{kNm}]$')
+add_point_guides(ax_l1, L1_POINTS, L1_POINTS_M)
+ax_l1.grid(False)
+ax_l1.xaxis.set_major_formatter(ONE_DECIMAL)
+ax_l1.yaxis.set_major_formatter(ONE_DECIMAL)
+ax_l1.tick_params(labelbottom=False, labelleft=False, bottom=False, left=False)
+
+fig2a.savefig('./syst_4_plots/fig2a_section_l1.png', dpi=220, bbox_inches='tight', facecolor='white')
+fig2a.savefig('./syst_4_plots/fig2a_section_l1.svg', bbox_inches='tight', facecolor='white')
+
+# --- FIGURE 2b: M vs l_2, section at l_1 = 0.0 ---
+fig2b, ax_l2 = plt.subplots(figsize=(8, 6))
+ax_l2.plot(H_range, M_Th2_mesh[:, 0], color='black')
+style_arrow_axes(ax_l2)
+add_origin_line(ax_l2, L2_POINTS[0], L2_POINTS_M[0])
+label_arrow_axes(ax_l2, r'$l_{2}\ [\mathrm{kN/m^2}]$', r'$M\ [\mathrm{kNm}]$')
+add_point_guides(ax_l2, L2_POINTS, L2_POINTS_M)
+ax_l2.grid(False)
+ax_l2.xaxis.set_major_formatter(ONE_DECIMAL)
+ax_l2.yaxis.set_major_formatter(ONE_DECIMAL)
+ax_l2.tick_params(labelbottom=False, labelleft=False, bottom=False, left=False)
+
+fig2b.savefig('./syst_4_plots/fig2b_section_l2.png', dpi=220, bbox_inches='tight', facecolor='white')
+fig2b.savefig('./syst_4_plots/fig2b_section_l2.svg', bbox_inches='tight', facecolor='white')

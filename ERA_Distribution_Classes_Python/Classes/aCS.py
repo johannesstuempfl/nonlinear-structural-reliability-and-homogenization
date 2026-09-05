@@ -49,6 +49,8 @@ Based on:
 ---------------------------------------------------------------------------
 """
 
+np.random.seed(42) # JO: set the seed for reproducability
+
 def aCS(N, old_lam, b, u_j, G_LSF):
     # %% Initialize variables
     n  = np.size(u_j,axis=1)     # number of uncertain parameters

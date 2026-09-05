@@ -59,6 +59,7 @@ Based on:
    Probabilistic Engineering Mechanics 41 (2015) 83-103.
 ---------------------------------------------------------------------------
 """
+np.random.seed(42) # JO: set the seed for reproducability
 
 def SuS(N, p0, g_fun, distr, samples_return):
     if (N*p0 != np.fix(N*p0)) or (1/p0 != np.fix(1/p0)):

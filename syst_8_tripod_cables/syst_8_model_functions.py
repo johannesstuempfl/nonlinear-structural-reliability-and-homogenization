@@ -222,6 +222,7 @@ def t_S_cablenet_nonlinear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
 
 def t_S_cablenet_linear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
     """
+    DEPRECATED!!!
     Takes in loads F_Z and F_Y in kN. 
     F_Z points in negative z-direction (downwards).
     F_Y points in negative y-direction.
@@ -359,3 +360,55 @@ def t_S_cablenet_linear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
     analysis.Finalize()
 
     return stress_pa /1e6 # output in MPa, not Pa
+
+
+
+
+def t_S_hyperplane_linear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
+    """
+    This is the linear hyperplane function for the cablenet structure. 
+    It does not use KratosMultiphysics but is constructed as follows: 
+    The hyperplane is calibrated by keeping the load ratios r1 and r2 equal to the nonlinear model, including prestress. 
+    So first, the plane is defined trough the three points: p1, p2, p3 which correspond to t_S(0,0), t_S(l1k,0), t_S(0,l2k). 
+    Then, t_S(0,0) is subtracted.
+    """
+    
+    # Here are the results of the nonlinear model. They serve for calibrating this linear hyperplane.
+    r_1_nonl = 0.7162014844533113
+    r_2_nonl = 0.4388132608043804
+    l1k = 1.1                       # kN/m2
+    l2k = 0.65                      # kN/m2
+    t_S_l1k_0 = 599.6809164926956   # MPa
+    t_S_0_l2k = 435.9121740437515   # MPa
+    t_S_0_0 = 176.8388257           # MPa
+    
+    # # With the given values, the point t_S(0,0) is calculated by rearranging the equations for r1 and r2
+    # t_S_0_0 = t_S_l1k_0 - r_1_nonl * ((t_S_l1k_0 - t_S_0_l2k)/(r_1_nonl - r_2_nonl))
+    # # doesn't work
+    
+    # Constructing the array representation of the three points, which define the plane
+    p1 = np.array([0, 0 , t_S_0_0])
+    p2 = np.array([l1k, 0 , t_S_l1k_0])
+    p3 = np.array([0, l2k , t_S_0_l2k])
+    
+    # Form the edge vectors 
+    v1 = p2 - p1 
+    v2 = p3 - p1
+    
+    # Normal Vector via cross product 
+    n = np.cross(v1, v2)
+    
+    # Expanding with n = (a,b,c) and d = n * p1
+    a, b, c = n
+    d = n @ p1
+    
+    # Getting the slopes m1 and m2 in l1 and l2 direction as well as the z-intercept z0
+    m1 = -a/c
+    m2 = -b/c
+    z0 = d/c
+    
+    # Hyperplane function
+    z = m1 * F_Z + m2 * F_Y + z0 - t_S_0_0
+    
+    return z 
+    

@@ -399,7 +399,7 @@ print('\n\nSUBSET SIMULATION OPTION 2 primed: ')
 
 
 
-print("\n\n=== SUMMARY SUBSET SIMULATION ===")
+# print("\n\n=== SUMMARY SUBSET SIMULATION ===")
 
 # print("\nDesign option (1)")
 # print(f"Pr(F) = {Pf_1_SuS}")
@@ -413,11 +413,11 @@ print("\n\n=== SUMMARY SUBSET SIMULATION ===")
 # beta_2_SuS = - X.icdf(Pf_2_SuS)
 # print(f"beta = {beta_2_SuS}")
 
-print("\nDesign option (2')")
-print(f"Pr(F) = {Pf_2_primed_SuS}")
-X = ERADist('standardnormal','MOM',[])
-beta_2_primed_SuS = - X.icdf(Pf_2_primed_SuS)
-print(f"beta = {beta_2_primed_SuS}")
+# print("\nDesign option (2')")
+# print(f"Pr(F) = {Pf_2_primed_SuS}")
+# X = ERADist('standardnormal','MOM',[])
+# beta_2_primed_SuS = - X.icdf(Pf_2_primed_SuS)
+# print(f"beta = {beta_2_primed_SuS}")
 
 
 
@@ -482,6 +482,7 @@ print(f"beta = {beta_2_primed_SuS}")
 # print(f"beta_2' = {beta_2_primed}") 
 # print(f"x_star_2' = {x_star_2_primed}")
 # print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
+
 
 # ---------------------------------------------------------------------------------------
 # Limit State Functions g(X) for option 1 and 2 with FORM, without model uncertainties

@@ -412,3 +412,14 @@ def t_S_hyperplane_linear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
     
     return z 
     
+
+# # Verification 
+# print(t_S_hyperplane_linear(0, 0))       # should yield 176.839
+# print(t_S_hyperplane_linear(1.1, 0))     # should yield 599.681
+# print(t_S_hyperplane_linear(0, 0.65))    # # should yield 435.912
+
+# # r1 
+# print((t_S_hyperplane_linear(1.1, 0) - t_S_hyperplane_linear(0, 0)) / (t_S_hyperplane_linear(1.1, 0.65) - t_S_hyperplane_linear(0, 0)))
+
+# #r2 
+# print((t_S_hyperplane_linear(0.0, 0.65) - t_S_hyperplane_linear(0, 0)) / (t_S_hyperplane_linear(1.1, 0.65) - t_S_hyperplane_linear(0, 0)))

@@ -393,48 +393,6 @@ def g_opt2_primed_SuS(x):
 # print(f"beta = {beta_2_primed_SuS}")
 
 
-# ---------------------------------------------------------------------------------------
-# Limit State Functions g(X) for option 1, 2 and 2' with FORM, with model uncertainties
-
-def g_opt1_FORM(x):
-    
-    resistance_side = p_opt1 * x[0] * x[1]
-    action_side = x[6] * t_S_lin_vectorized((x[2] * x[3]), (x[4] * x[5]))
-    
-    return resistance_side - action_side
-
-def g_opt2_FORM(x):
-    
-    resistance_side = p_opt2 * x[0] * x[1]
-    action_side = x[6] * t_S_lin_vectorized((x[2] * x[3]), (x[4] * x[5]))
-    
-    return resistance_side - action_side
-
-def g_opt2_primed_FORM(x):
-    
-    resistance_side = p_opt2_primed * x[0] * x[1]
-    action_side = x[6] * t_S_lin_vectorized((x[2] * x[3]), (x[4] * x[5]))
-    
-    return resistance_side - action_side
-
-# ---------------------------------------------------------------------------------------
-# FORM via fmincon, with model uncertainties 
-
-# print("\n=== FORM (fmincon) - Design option (1) ===")
-# [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
-#     g=g_opt1_FORM, dg=[] , distr=nataf_with_uncertainties, u0=0, maxit=60, tol=1e-6)
-
-# # FORM via fmincon  
-# print("\n=== FORM (fmincon) - Design option (2) ===")
-# [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
-#     g=g_opt2_FORM, dg=[] , distr=nataf_with_uncertainties, u0=0, maxit=60, tol=1e-6)
-
-# # FORM via fmincon  
-# print("\n=== FORM (fmincon) - Design option (2') ===")
-# [u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
-#     g=g_opt2_primed_FORM, dg=[] , distr=nataf_with_uncertainties, u0=0, maxit=60, tol=1e-6)
-
-
 # print("\n\n=== SUMMARY ===")
 # print("\nDesign option (1)")
 # print(f"Pf_1 = {Pf_1}")

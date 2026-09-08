@@ -365,47 +365,13 @@ def _run_static_kratos_nonlinear(L_1: float, L_2: float = 0.0) -> float:
     p = 100.0
     ratios = all_s11 / hard_max
     smooth_max = hard_max * np.sum(np.clip(ratios, 0.0, None) ** p) ** (1.0 / p)
-    return smooth_max * THICKNESS / 1000.0
+    
+    
+    # return smooth_max * THICKNESS / 1000.0 # in kN/m
+    return smooth_max / 1e6 # in N/mm^2
 
 
 _CALL_COUNT = [0]  # plain list so the closure below can mutate it (no `nonlocal` needed)
-
-
-def t_S_hypar_linear(L_1: float = 0.0, L_2: float = 0.0):
-    """
-    The structural-response function - this is syst_7's analog of syst_4's
-    t_S(l_1, l_2). Takes a snow load L [kN/m^2] and returns the resulting max
-    warp-direction membrane stress [kN/m].
-
-    Accepts either a plain scalar OR a 1D array-like of L values, and returns
-    a matching scalar or 1D array. This dual behavior is NOT optional - it's
-    required by how FORM_HLRF's finite-difference gradient estimator calls
-    g(x) internally: once with a single point (1D array of length d, the
-    number of random variables) to get the LSF value, and once with a (d,d)
-    matrix (one row per perturbed dimension) to estimate the gradient. Your
-    own g(x) needs to pass whatever "L slice" it receives straight through to
-    this function and trust it to handle both shapes - see g_opt_a/g_opt_b
-    below for exactly how that's done (x[..., 1] handles both cases via
-    numpy's ellipsis indexing).
-
-    Every call prints its own [call N] trace line - deliberately verbose,
-    because watching this trace is how you tell whether FORM's search is
-    converging sensibly or wandering into a bad region (see the "Middle
-    part"/"Lower part" transcripts referenced in the module docstring for
-    what a problematic trace looks like: repeated near-identical L values
-    with inconsistent e, or L drifting to physically extreme values).
-    """
-    scalar_in = (np.ndim(L_1) == 0) and (np.ndim(L_2) == 0)
-    L_snow_arr = np.atleast_1d(np.asarray(L_1, dtype=float))
-    L_wind_arr = np.atleast_1d(np.asarray(L_2, dtype=float))
-    L_snow_arr, L_wind_arr = np.broadcast_arrays(L_snow_arr, L_wind_arr)
-    out = np.empty(L_snow_arr.shape[0])
-    for i in range(L_snow_arr.shape[0]):
-        _CALL_COUNT[0] += 1
-        val = _run_static_kratos_linear(float(L_snow_arr[i]), float(L_wind_arr[i]))
-        out[i] = val
-        print(f"  [call {_CALL_COUNT[0]:4d}] L_snow={L_snow_arr[i]:9.4f}  L_wind={L_wind_arr[i]:9.4f} kN/m^2  ->  e={val:9.4f} kN/m", flush=True)
-    return out[0] if scalar_in else out
 
 
 
@@ -442,88 +408,54 @@ def t_S_hypar_nonlinear(L_1: float = 0.0, L_2: float = 0.0):
         _CALL_COUNT[0] += 1
         val = _run_static_kratos_nonlinear(float(L_snow_arr[i]), float(L_wind_arr[i]))
         out[i] = val
-        print(f"  [call {_CALL_COUNT[0]:4d}] L_snow={L_snow_arr[i]:9.4f}  L_wind={L_wind_arr[i]:9.4f} kN/m^2  ->  e={val:9.4f} kN/m", flush=True)
+        print(f"  [call {_CALL_COUNT[0]:4d}] L_snow={L_snow_arr[i]:9.4f}  L_wind={L_wind_arr[i]:9.4f} kN/m^2  ->  e={val:9.4f} kN/m2", flush=True)
     return out[0] if scalar_in else out
 
 
 
 
-if __name__ == "__main__":
-    print("===Test Phase===")
+def t_S_hyperplane_linear(F_Z: float = 0.0, F_Y: float = 0.0) -> float:
+    """
+    This is the linear hyperplane function for the cablenet structure. 
+    It does not use KratosMultiphysics but is constructed as follows: 
+    The hyperplane is calibrated by keeping the load ratios r1 and r2 equal to the nonlinear model, including prestress. 
+    So first, the plane is defined trough the three points: p1, p2, p3 which correspond to t_S(0,0), t_S(l1k,0), t_S(0,l2k). 
+    Then, t_S(0,0) is subtracted.
+    """
     
-    N_lin = t_S_hypar_linear(L_1=0.6,L_2=0.3)
-    print(f"\nN = {N_lin}")
+    # Here are the results of the nonlinear model. They serve for calibrating this linear hyperplane.
+    l1k = 1.1                       # kN/m2
+    l2k = 0.65                      # kN/m2
+    t_S_l1k_0 = 8.700958843457569   # MPa
+    t_S_0_l2k = 3.1749104137090716   # MPa
+    t_S_0_0 = 3.0596512849207254     # MPa
     
-    N_nonl = t_S_hypar_nonlinear(L_1=0.6,L_2=0.3)
-    print(f"\nN = {N_nonl}")
+    # # With the given values, the point t_S(0,0) is calculated by rearranging the equations for r1 and r2
+    # t_S_0_0 = t_S_l1k_0 - r_1_nonl * ((t_S_l1k_0 - t_S_0_l2k)/(r_1_nonl - r_2_nonl))
+    # # doesn't work
     
-    print(f"Difference: {N_nonl-N_lin}")
-
-    # # ------------------------------------------------------------------
-    # # Random variables - Fusseder et al. 2021
-    # # ------------------------------------------------------------------
-    # mu_L, cov_L = 0.34, 0.3
-    # L_dist = ERADist('gumbel', 'MOM', [mu_L, mu_L * cov_L])       # snow load, kN/m^2
-
-    # mu_M, cov_M = 1.0, 0.1
-    # M_dist = ERADist('lognormal', 'MOM', [mu_M, mu_M * cov_M])    # membrane tensile strength
-
-    # marginal_dist = [M_dist, L_dist]   # x[0] = M, x[1] = L
-    # nataf = ERANataf(M=marginal_dist, Correlation=np.eye(2))
-
-    # gamma_F = 1.5   # partial safety factor, load side
-    # gamma_M = 1.4   # partial safety factor, resistance side (from Technical Specification, per the paper)
-
-    # # Characteristic values: 98th percentile of the load, 5th percentile of the resistance
-    # l_k = L_dist.icdf(0.98)
-    # m_k = M_dist.icdf(0.05)
-    # print(f"\nl_k = {l_k:.4f} kN/m^2")
-    # print(f"m_k = {m_k:.4f} kN/m^2")
-
-    # # # ------------------------------------------------------------------
-    # # Design values p for option 1 and 2 
-    # # ------------------------------------------------------------------
-    # e_d_opt_1 = t_S_kratos_nonlinear(gamma_F * l_k)   # Option 1 
-    # e_d_opt_2 = gamma_F * t_S_kratos_nonlinear(l_k)   # Option 2 
+    # Constructing the array representation of the three points, which define the plane
+    p1 = np.array([0, 0 , t_S_0_0])
+    p2 = np.array([l1k, 0 , t_S_l1k_0])
+    p3 = np.array([0, l2k , t_S_0_l2k])
     
-    # p_opt_1 = gamma_M * e_d_opt_1 / m_k
-    # p_opt_2 = gamma_M * e_d_opt_2 / m_k
+    # Form the edge vectors 
+    v1 = p2 - p1 
+    v2 = p3 - p1
     
-    # print(f"\ntS(gamma_F * l_k) = {e_d_opt_1:.4f} kN/m")
-    # print(f"tS(l_k)           = {e_d_opt_2:.4f} kN/m")
-    # print(f"p_opt_1 = {p_opt_1:.5f}")
-    # print(f"p_opt_2 = {p_opt_2:.5f}")
-
-    # # # ------------------------------------------------------------------
-    # # Limit-state functions - paper eq. (12): g = d*M - tS(L). This is the
-    # # direct analog of syst_4's g_opt_1_FORM: resistance_side - action_side.
-    # # x[..., 0] / x[..., 1] (ellipsis indexing) instead of x[0]/x[1] or
-    # # x[:,0]/x[:,1] is what makes this work correctly whether FORM_HLRF calls
-    # # g with a single point (x.shape == (2,)) or a perturbation batch
-    # # (x.shape == (2,2)) - see t_S_kratos's docstring above.
-    # # ------------------------------------------------------------------
-    # def g_opt_1(x):
-    #     x = np.asarray(x, dtype=float)
-    #     return p_opt_1 * x[..., 0] - t_S_kratos_nonlinear(x[..., 1])
-
-    # def g_opt_2(x):
-    #     x = np.asarray(x, dtype=float)
-    #     return p_opt_2 * x[..., 0] - t_S_kratos_nonlinear(x[..., 1])
-
-
-    # # ------------------------------------------------------------------
-    # # FORM via HLRF  (fmincon tested extreme big load values -> Kratos crashed)
-    # # ------------------------------------------------------------------
-    # print("\n=== FORM (HLRF) - Design option (a) ===")
-    # u_star_1, x_star_1, beta_1, Pf_1, _, _ = FORM_HLRF(
-    #     g=g_opt_1, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
-
-    # print("\n=== FORM (HLRF) - Design option (b) ===")
-    # u_star_2, x_star_2, beta_2, Pf_2, _, _ = FORM_HLRF(
-    #     g=g_opt_2, dg=[], distr=nataf, sensitivity_analysis=0, u0=0, maxit=60, tol=1e-4)
-
-    # print("\n\n=== SUMMARY ===")
-    # print(f"Design option (1): beta = {beta_1:.3f}   (paper: 4.96)")
-    # print(f"x_star_1: {x_star_1}")
-    # print(f"Design option (2): beta = {beta_2:.3f}   (paper: 5.56)")
-    # print(f"x_star_2: {x_star_2}")
+    # Normal Vector via cross product 
+    n = np.cross(v1, v2)
+    
+    # Expanding with n = (a,b,c) and d = n * p1
+    a, b, c = n
+    d = n @ p1
+    
+    # Getting the slopes m1 and m2 in l1 and l2 direction as well as the z-intercept z0
+    m1 = -a/c
+    m2 = -b/c
+    z0 = d/c
+    
+    # Hyperplane function
+    z = m1 * F_Z + m2 * F_Y + z0 - t_S_0_0
+    
+    return z 

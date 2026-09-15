@@ -57,7 +57,7 @@ L2_dist = ERADist('gumbel', 'MOM', [mu_L2, sig_L2])
 mu_Theta_S = 1.0
 cov_Theta_S = 0.15
 sig_Theta_S = mu_Theta_S * cov_Theta_S
-Theta_S_dist = ERADist('normal', 'MOM', [mu_Theta_S, sig_Theta_S])
+Theta_S_dist = ERADist('lognormal', 'MOM', [mu_Theta_S, sig_Theta_S])
 
 
 # Resistance Model Uncertainty $\Theta_{M}$ Annahme !
@@ -294,42 +294,42 @@ def g_opt2_primed_FORM(x):
 # ---------------------------------------------------------------------------------------
 # FORM via fmincon, with model uncertainties
 
-print("\n=== FORM (fmincon) - Design option (1) ===")
-[u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
-    g=g_opt1_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-6)
+# print("\n=== FORM (fmincon) - Design option (1) ===")
+# [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
+#     g=g_opt1_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-6)
 
 
-# FORM via fmincon  
-print("\n=== FORM (fmincon) - Design option (2) ===")
-[u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
-    g=g_opt2_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-6)
+# # FORM via fmincon  
+# print("\n=== FORM (fmincon) - Design option (2) ===")
+# [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
+#     g=g_opt2_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-6)
 
-# FORM via fmincon  
-print("\n=== FORM (fmincon) - Design option (2') ===")
-[u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
-    g=g_opt2_primed_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-6)
+# # FORM via fmincon  
+# print("\n=== FORM (fmincon) - Design option (2') ===")
+# [u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
+#     g=g_opt2_primed_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-6)
 
-print("\n\n=== SUMMARY ===")
-print("\nDesign option (1)")
-print(f"Pf_1 = {Pf_1}")
-print(f"beta_1 = {beta_1}") 
-print(f"x_star_1 = {x_star_1}")
-print(f"(alpha_1)^2 = {(u_star_1/beta_1)**2}")
-print(f"g(X*) = {g_opt1_FORM(x_star_1)}")
+# print("\n\n=== SUMMARY ===")
+# print("\nDesign option (1)")
+# print(f"Pf_1 = {Pf_1}")
+# print(f"beta_1 = {beta_1}") 
+# print(f"x_star_1 = {x_star_1}")
+# print(f"(alpha_1)^2 = {(u_star_1/beta_1)**2}")
+# print(f"g(X*) = {g_opt1_FORM(x_star_1)}")
 
-print("\n\nDesign option (2)")
-print(f"Pf_2 = {Pf_2}")
-print(f"beta_2 = {beta_2}") 
-print(f"x_star_2 = {x_star_2}")
-print(f"(alpha_2)^2 = {(u_star_2/beta_2)**2}")
-print(f"g(X*) = {g_opt2_FORM(x_star_2)}")
+# print("\n\nDesign option (2)")
+# print(f"Pf_2 = {Pf_2}")
+# print(f"beta_2 = {beta_2}") 
+# print(f"x_star_2 = {x_star_2}")
+# print(f"(alpha_2)^2 = {(u_star_2/beta_2)**2}")
+# print(f"g(X*) = {g_opt2_FORM(x_star_2)}")
 
-print("\n\nDesign option (2')")
-print(f"Pf_2' = {Pf_2_primed}")
-print(f"beta_2' = {beta_2_primed}") 
-print(f"x_star_2' = {x_star_2_primed}")
-print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
-print(f"g(X*) = {g_opt2_primed_FORM(x_star_2_primed)}")
+# print("\n\nDesign option (2')")
+# print(f"Pf_2' = {Pf_2_primed}")
+# print(f"beta_2' = {beta_2_primed}") 
+# print(f"x_star_2' = {x_star_2_primed}")
+# print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
+# print(f"g(X*) = {g_opt2_primed_FORM(x_star_2_primed)}")
 
 
 
@@ -360,36 +360,36 @@ def g_opt2_primed_FORM(x):
 # ---------------------------------------------------------------------------------------
 # FORM via fmincon, without model uncertainties
 
-# print("\n=== FORM (fmincon) - Design option (1) ===")
-# [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
-#     g=g_opt1_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
+print("\n=== FORM (fmincon) - Design option (1) ===")
+[u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
+    g=g_opt1_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
 
-# # FORM via fmincon  
-# print("\n=== FORM (fmincon) - Design option (2) ===")
-# [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
-#     g=g_opt2_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
+# FORM via fmincon  
+print("\n=== FORM (fmincon) - Design option (2) ===")
+[u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
+    g=g_opt2_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
 
-# # FORM via fmincon  
-# print("\n=== FORM (fmincon) - Design option (2') ===")
-# [u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
-#     g=g_opt2_primed_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
+# FORM via fmincon  
+print("\n=== FORM (fmincon) - Design option (2') ===")
+[u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
+    g=g_opt2_primed_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
 
 
-# print("\n\n=== SUMMARY ===")
-# print("\nDesign option (1)")
-# print(f"Pf_1 = {Pf_1}")
-# print(f"beta_1 = {beta_1}") 
-# print(f"x_star_1 = {x_star_1}")
-# print(f"(alpha_1)^2 = {(u_star_1/beta_1)**2}")
+print("\n\n=== SUMMARY ===")
+print("\nDesign option (1)")
+print(f"Pf_1 = {Pf_1}")
+print(f"beta_1 = {beta_1}") 
+print(f"x_star_1 = {x_star_1}")
+print(f"(alpha_1)^2 = {(u_star_1/beta_1)**2}")
 
-# print("\n\nDesign option (2)")
-# print(f"Pf_2 = {Pf_2}")
-# print(f"beta_2 = {beta_2}") 
-# print(f"x_star_2 = {x_star_2}")
-# print(f"(alpha_2)^2 = {(u_star_2/beta_2)**2}")
+print("\n\nDesign option (2)")
+print(f"Pf_2 = {Pf_2}")
+print(f"beta_2 = {beta_2}") 
+print(f"x_star_2 = {x_star_2}")
+print(f"(alpha_2)^2 = {(u_star_2/beta_2)**2}")
 
-# print("\n\nDesign option (2')")
-# print(f"Pf_2' = {Pf_2_primed}")
-# print(f"beta_2' = {beta_2_primed}") 
-# print(f"x_star_2' = {x_star_2_primed}")
-# print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
+print("\n\nDesign option (2')")
+print(f"Pf_2' = {Pf_2_primed}")
+print(f"beta_2' = {beta_2_primed}") 
+print(f"x_star_2' = {x_star_2_primed}")
+print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")

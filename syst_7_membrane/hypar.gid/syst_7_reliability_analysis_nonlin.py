@@ -57,7 +57,7 @@ L2_dist = ERADist('gumbel', 'MOM', [mu_L2, sig_L2])
 mu_Theta_S = 1.0
 cov_Theta_S = 0.15
 sig_Theta_S = mu_Theta_S * cov_Theta_S
-Theta_S_dist = ERADist('normal', 'MOM', [mu_Theta_S, sig_Theta_S])
+Theta_S_dist = ERADist('lognormal', 'MOM', [mu_Theta_S, sig_Theta_S])
 
 
 # Resistance Model Uncertainty $\Theta_{M}$ Annahme !
@@ -186,24 +186,24 @@ print(f"m_d = {m_d:.4f} MPa")
 # ---------------------------------------------------------------------------------------
 # Measures of Nonlinearity
 
-# y0 = y0(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hypar_nonlinear)
-# k1 = kappa_1(l_1k=l_1k, l_1d=l_1d,t_S=t_S_hypar_nonlinear)
-# k2 = kappa_2(l_2k=l_2k, l_2d=l_2d,t_S=t_S_hypar_nonlinear)
-# k12 = kappa_12(l_1k=l_1k, l_1d=l_1d, l_2k=l_2k, l_2d=l_2d, t_S=t_S_hypar_nonlinear)
-# r1 = r1(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hypar_nonlinear)
-# r2 = r2(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hypar_nonlinear)
+y0 = y0(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hypar_nonlinear)
+k1 = kappa_1(l_1k=l_1k, l_1d=l_1d,t_S=t_S_hypar_nonlinear)
+k2 = kappa_2(l_2k=l_2k, l_2d=l_2d,t_S=t_S_hypar_nonlinear)
+k12 = kappa_12(l_1k=l_1k, l_1d=l_1d, l_2k=l_2k, l_2d=l_2d, t_S=t_S_hypar_nonlinear)
+r1 = r1(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hypar_nonlinear)
+r2 = r2(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hypar_nonlinear)
 
-# print(f"\n")
-# print("================================")
-# print("Measures of nonlinearity")
-# print("================================")
+print(f"\n")
+print("================================")
+print("Measures of nonlinearity")
+print("================================")
 
-# print(f"y0: {y0}")
-# print(f"kappa1: {k1}")
-# print(f"kappa2: {k2}")
-# print(f"kappa12: {k12}")
-# print(f"r1 = {r1}")
-# print(f"r2 = {r2}")
+print(f"y0: {y0}")
+print(f"kappa1: {k1}")
+print(f"kappa2: {k2}")
+print(f"kappa12: {k12}")
+print(f"r1 = {r1}")
+print(f"r2 = {r2}")
 
 
 
@@ -327,24 +327,21 @@ def g_opt2_primed_FORM(x):
 
 
 # ---------------------------------------------------------------------------------------
-# # FORM via fmincon, with model uncertainties 
+# FORM via fmincon, with model uncertainties 
 # print("\n=== FORM (fmincon) - Design option (1) ===")
 # [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
 #     g=g_opt1_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-4)
 
 
-# FORM via fmincon, with model uncertainties 
 print("\n=== FORM (fmincon) - Design option (2) ===")
 [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
     g=g_opt2_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-4)
 
-# # FORM via fmincon  
-# print("\n=== FORM (fmincon) - Design option (2') ===")
-# [u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
-#     g=g_opt2_primed_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-4)
+print("\n=== FORM (fmincon) - Design option (2') ===")
+[u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
+    g=g_opt2_primed_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-4)
 
 print("\n\n=== SUMMARY ===")
-
 # print("\nDesign option (1)")
 # print(f"Pf_1 = {Pf_1}")
 # print(f"beta = {beta_1}") 
@@ -359,12 +356,12 @@ print(f"x_star_2 = {x_star_2}")
 print(f"alpha_2 = {u_star_2/beta_2}")
 print(f"g(X*) = {g_opt2_FORM(x_star_2)}")
 
-# print("\n\nDesign option (2')")
-# print(f"Pf_2' = {Pf_2_primed}")
-# print(f"beta_2' = {beta_2_primed}") 
-# print(f"x_star_2' = {x_star_2_primed}")
-# print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
-# print(f"g(X*) = {g_opt2_primed_FORM(x_star_2_primed)}")
+print("\n\nDesign option (2')")
+print(f"Pf_2' = {Pf_2_primed}")
+print(f"beta_2' = {beta_2_primed}") 
+print(f"x_star_2' = {x_star_2_primed}")
+print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
+print(f"g(X*) = {g_opt2_primed_FORM(x_star_2_primed)}")
 
 
 
@@ -409,7 +406,7 @@ def g_opt2_FORM(x):
 
 def g_opt2_primed_FORM(x):
     x = np.asarray(x, dtype=float)
-    resistance_side = p_opt2 * x[..., 0]
+    resistance_side = p_opt2_primed * x[..., 0]
     
     L1_raw = x[..., 1] 
     L2_raw = x[..., 2]
@@ -432,12 +429,12 @@ def g_opt2_primed_FORM(x):
 # [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
 #     g=g_opt1_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-4)
 
-# # FORM via fmincon  
+
 # print("\n=== FORM (fmincon) - Design option (2) ===")
 # [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
 #     g=g_opt2_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-4)
 
-# # FORM via fmincon  
+
 # print("\n=== FORM (fmincon) - Design option (2') ===")
 # [u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
 #     g=g_opt2_primed_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-4)

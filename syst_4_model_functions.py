@@ -5,27 +5,7 @@ from buckling_analysis import BucklingAnalysis
 import numpy as np
 import matplotlib.pyplot as plt
 
-# # NEW modified IPE 120 -> eta = 100% for Th.I.O.
-# E = 210e6 # kN/m2 
-# A = 1.321e-3 # m2
-# I = 0.2740555e-5 # m4
-# h = 0.12  # m
-# z = h/2  # m
-# sigma_yield = 35.5 # kN/cm2 
-# alpha = 1.14
-# M_yield = I/z * sigma_yield * 100e2 * 1.14 # kNm
-
-# # approximately resembles an IPE 120
-# E = 210e6 # kN/m2 
-# A = 1.321e-3 # m2
-# I = 0.318e-5 # m4
-# h = 0.12  # m
-# z = h/2  # m
-# sigma_yield = 35.5 # kN/cm2 
-# alpha = 1.14
-# M_yield = I/z * sigma_yield * 100e2 * alpha # kNm
-
-# intermediate modified IPE 120 -> eta = 100% for linear hyperplane
+# modified IPE 120 -> eta = 100% for linear hyperplane
 E = 210e6 # kN/m2 
 A = 1.321e-3 # m2
 I = 2.7784576742780014e-06 # m4

@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# GiD/Kratos-generated regenerable artifacts (source of truth is the
+# .mdpa / ProjectParameters.json / StructuralMaterials.json / MainKratos.py
+# files, which stay tracked). Unscoped so this also covers
+# kratos_docker/gid_test_case.gid/ (the early Docker/Kratos verification
+# test case), not just syst_7_membrane/hypar.gid/.
+*.lck
+*.post.bin
+*.post.lst
+vtk_output/
+formfinding_results_vtk/
+Logs/

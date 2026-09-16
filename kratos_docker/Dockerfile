@@ -1,7 +1,5 @@
 # Kratos Multiphysics ships pip wheels only for Windows and Linux (manylinux
-# x86_64) - no macOS wheel, no Linux/arm64 wheel. This image runs the
-# officially published Linux wheel; on Apple Silicon it executes under
-# Docker Desktop's Rosetta-based x86_64 emulation.
+# x86_64)
 FROM --platform=linux/amd64 python:3.11-slim
 
 # libgomp1: OpenMP runtime needed by Kratos's compiled C++ core
@@ -9,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Kratos itself, plus the packages your existing reliability pipeline
+# Kratos itself, plus the packages the existing reliability pipeline
 # (node.py / structure.py / ERA_Distribution_Classes_Python) needs
 RUN pip install --no-cache-dir \
         KratosMultiphysics-all \

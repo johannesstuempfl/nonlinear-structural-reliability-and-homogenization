@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Runs a command inside the kratos-mem container, with your whole project
-# folder mounted at /workspace (so node.py, structure.py, the ERA classes,
-# and any Kratos scripts you write can all see each other).
+# Runs a command inside the kratos-mem container
 #
 # Examples:
 #   bash run.sh                                   # drop into a Python shell

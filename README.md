@@ -89,7 +89,7 @@ Note that `syst_3_membrane/hypar.gid/` also contains several Kratos-generated ou
 
 `ERA_Distribution_Classes_Python/` is the Engineering Risk Analysis (ERA) distribution and reliability toolbox and is **not** original work of this thesis. It provides the random variable classes (`ERADist`, `ERANataf`) and reliability methods (`FORM_HLRF`, `FORM_fmincon`, `SuS`) used throughout. See `ERA_Distribution_Classes_Python/system.pdf` for its own documentation.
 
-<!-- TODO: add the toolbox's original source/attribution link and license terms here. -->
+Original source: [ERA-Software on GitHub](https://github.com/ERA-Software/Overview).
 
 ## Reference
 

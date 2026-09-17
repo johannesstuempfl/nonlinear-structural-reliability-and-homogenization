@@ -1,7 +1,7 @@
 import numpy as np
-from structure import Structure
-from results import Results
-from solver_1st import Solver1stOrder
+from dsm_core.structure import Structure
+from dsm_core.results import Results
+from dsm_core.solver_1st import Solver1stOrder
 
 class Solver2ndOrder:
     """

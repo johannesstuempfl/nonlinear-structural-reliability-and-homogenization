@@ -1,6 +1,6 @@
 import numpy as np
-from structure import Structure
-from results import Results
+from dsm_core.structure import Structure
+from dsm_core.results import Results
 
 
 class Solver1stOrder:

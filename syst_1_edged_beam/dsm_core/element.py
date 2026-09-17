@@ -1,5 +1,5 @@
 import numpy as np
-from node import Node
+from dsm_core.node import Node
 
 class Element:
     """

@@ -1,6 +1,6 @@
 import numpy as np
-from node import Node
-from element import Element
+from dsm_core.node import Node
+from dsm_core.element import Element
 
 
 class Load:

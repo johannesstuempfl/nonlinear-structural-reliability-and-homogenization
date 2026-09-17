@@ -1,5 +1,5 @@
-from structure import Structure
-from solver_1st import Solver1stOrder
+from dsm_core.structure import Structure
+from dsm_core.solver_1st import Solver1stOrder
 import numpy as np
 
 class BucklingAnalysis:

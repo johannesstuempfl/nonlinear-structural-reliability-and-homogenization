@@ -1,7 +1,7 @@
 import numpy as np
-from node import Node
-from element import Element, TrussElement
-from loads import NodeLoad, DistLoad
+from dsm_core.node import Node
+from dsm_core.element import Element, TrussElement
+from dsm_core.loads import NodeLoad, DistLoad
 
 class Structure:
     """

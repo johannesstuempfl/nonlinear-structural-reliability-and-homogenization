@@ -1,10 +1,10 @@
-from structure import Structure
-from solver_1st import Solver1stOrder 
-from solver_2nd import Solver2ndOrder
+from dsm_core.structure import Structure
+from dsm_core.solver_1st import Solver1stOrder 
+from dsm_core.solver_2nd import Solver2ndOrder
 import numpy as np
 import matplotlib.pyplot as plt
 
-# intermediate modified IPE 120 -> eta = 100% for linear hyperplane
+# modified IPE 120 -> eta = 100% for linear hyperplane
 E = 210e6 # kN/m2 
 A = 1.321e-3 # m2
 I = 2.7784576742780014e-06 # m4
@@ -371,7 +371,7 @@ ax1.xaxis.set_major_formatter(ONE_DECIMAL)
 ax1.yaxis.set_major_formatter(ONE_DECIMAL)
 ax1.zaxis.set_major_formatter(ONE_DECIMAL)
 
-# Subplot 2: Contour plot (keeping your existing logic)
+# Subplot 2: Contour plot 
 ax2 = fig1.add_subplot(gs1[1])
 contour = ax2.contourf(V_mesh, H_mesh, M_Th2_mesh, levels=20, cmap='viridis')
 ax2.set_xlabel(r'Snow load $l_{1}$ $[\mathrm{kN/m^2}]$')
@@ -383,47 +383,10 @@ ax2.set_box_aspect(1)   # force a square (quadratic) contour panel, regardless o
 ax2.xaxis.set_major_formatter(ONE_DECIMAL)
 ax2.yaxis.set_major_formatter(ONE_DECIMAL)
 
-# Reserve a modest, fixed left margin for the 3D z-axis label instead of
-# relying on bbox_inches='tight' (which under-measures rotated 3D text and
-# clips it). Kept tighter than before to remove the excess left white space
-# and center the two panels; nudge back up if the z-label starts clipping.
 fig1.subplots_adjust(left=0.07, right=0.90, top=0.90, bottom=0.10)
-fig1.savefig('./syst_4_plots/fig1_surface_contour.png', dpi=220, facecolor='white')
-fig1.savefig('./syst_4_plots/fig1_surface_contour.svg', facecolor='white')
+fig1.savefig('./syst_1_plots/fig1_surface_contour.png', dpi=220, facecolor='white')
+fig1.savefig('./syst_1_plots/fig1_surface_contour.svg', facecolor='white')
 
-# # --- FIGURE 2: Extra Pictures (2D Projections) ---
-# fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(16, 6))
-
-# # Picture 1: V vs M (Looking "sideways" at the 3D plot)
-# # We plot multiple lines for different H values to show the trend
-# for i in range(0, len(H_range), 4): # Plot every 4th H-level for clarity
-#     ax3.plot(V_range, M_Th2_mesh[i, :], label=fr'$l_{2} = {H_range[i]:.2f}\ \mathrm{{kN/m}}$')
-
-# ax3.set_xlabel(r'Snow load $l_{1}$ $[\mathrm{kN/m^2}]$')
-# ax3.set_ylabel(r'Internal moment $M$ $[\mathrm{kNm}]$')
-# ax3.set_title(r'$M$ as function of $l_{1}$ (various $l_{2}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
-# ax3.grid(True, linestyle='--', alpha=0.6)
-# ax3.legend(fontsize='small', loc='upper left')
-# ax3.xaxis.set_major_formatter(ONE_DECIMAL)
-# ax3.yaxis.set_major_formatter(ONE_DECIMAL)
-
-# # Picture 2: H vs M (Looking "front-on" at the 3D plot)
-# # We plot multiple lines for different V values
-# for i in range(0, len(V_range), 4): # Plot every 4th V-level
-#     ax4.plot(H_range, M_Th2_mesh[:, i], label=fr'$l_{1} = {V_range[i]:.2f}\ \mathrm{{kN/m}}$')
-
-# ax4.set_xlabel(r'Wind load $l_{2}$ $[\mathrm{kN/m^2}]$')
-# ax4.set_ylabel(r'Internal moment $M$ $[\mathrm{kNm}]$')
-# ax4.set_title(r'$M$ as function of $l_{2}$ (various $l_{1}$)', fontsize=TITLE_FONTSIZE, fontweight='bold')
-# ax4.grid(True, linestyle='--', alpha=0.6)
-# ax4.legend(fontsize='small', loc='upper left')
-# ax4.xaxis.set_major_formatter(ONE_DECIMAL)
-# ax4.yaxis.set_major_formatter(ONE_DECIMAL)
-
-# plt.tight_layout()
-
-# fig2.savefig('./syst_4_plots/fig2_projections.png', dpi=220, bbox_inches='tight', facecolor='white')
-# fig2.savefig('./syst_4_plots/fig2_projections.svg', bbox_inches='tight', facecolor='white')
 
 import matplotlib.transforms as mtransforms
 
@@ -474,8 +437,8 @@ ax_l1.xaxis.set_major_formatter(ONE_DECIMAL)
 ax_l1.yaxis.set_major_formatter(ONE_DECIMAL)
 ax_l1.tick_params(labelbottom=False, labelleft=False, bottom=False, left=False)
 
-fig2a.savefig('./syst_4_plots/fig2a_section_l1.png', dpi=220, bbox_inches='tight', facecolor='white')
-fig2a.savefig('./syst_4_plots/fig2a_section_l1.svg', bbox_inches='tight', facecolor='white')
+fig2a.savefig('./syst_1_plots/fig2a_section_l1.png', dpi=220, bbox_inches='tight', facecolor='white')
+fig2a.savefig('./syst_1_plots/fig2a_section_l1.svg', bbox_inches='tight', facecolor='white')
 
 # --- FIGURE 2b: M vs l_2, section at l_1 = 0.0 ---
 fig2b, ax_l2 = plt.subplots(figsize=(8, 6))
@@ -489,5 +452,5 @@ ax_l2.xaxis.set_major_formatter(ONE_DECIMAL)
 ax_l2.yaxis.set_major_formatter(ONE_DECIMAL)
 ax_l2.tick_params(labelbottom=False, labelleft=False, bottom=False, left=False)
 
-fig2b.savefig('./syst_4_plots/fig2b_section_l2.png', dpi=220, bbox_inches='tight', facecolor='white')
-fig2b.savefig('./syst_4_plots/fig2b_section_l2.svg', bbox_inches='tight', facecolor='white')
+fig2b.savefig('./syst_1_plots/fig2b_section_l2.png', dpi=220, bbox_inches='tight', facecolor='white')
+fig2b.savefig('./syst_1_plots/fig2b_section_l2.svg', bbox_inches='tight', facecolor='white')

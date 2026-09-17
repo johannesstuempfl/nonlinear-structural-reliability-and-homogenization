@@ -1,7 +1,7 @@
-from structure import Structure
-from solver_1st import Solver1stOrder 
-from solver_2nd import Solver2ndOrder
-from buckling_analysis import BucklingAnalysis
+from dsm_core.structure import Structure
+from dsm_core.solver_1st import Solver1stOrder 
+from dsm_core.solver_2nd import Solver2ndOrder
+from dsm_core.buckling_analysis import BucklingAnalysis
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -356,4 +356,3 @@ def t_S_nonlinear(l_1, l_2, e=e, c_pe=c_pe):
     M_max = res2.internal_forces(s.elements[14])["M_j"]
 
     return M_max
-

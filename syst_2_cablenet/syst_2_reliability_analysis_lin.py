@@ -1,20 +1,22 @@
 import numpy as np
-from syst_7_measures_of_nonlinearity import y0, kappa_1, kappa_2, kappa_12, r1, r2
-from syst_7_model_functions import t_S_hypar_nonlinear, t_S_hyperplane_linear
+from syst_2_measures_of_nonlinearity import y0, kappa_1, kappa_2, kappa_12, r1, r2
+from syst_2_model_functions import t_S_hyperplane_linear, t_S_cablenet_nonlinear
 
 from ERA_Distribution_Classes_Python.Classes.ERADist import ERADist
 from ERA_Distribution_Classes_Python.Classes.ERANataf import ERANataf
 from ERA_Distribution_Classes_Python.Classes.FORM_HLRF import FORM_HLRF
 from ERA_Distribution_Classes_Python.Classes.FORM_fmincon import FORM_fmincon
+from ERA_Distribution_Classes_Python.Classes.SuS import SuS
 
 # Vectorized Version of the Structural response function (Better for array handling later)
 t_S_lin_vectorized = np.vectorize(t_S_hyperplane_linear, otypes=[float])
 
+
 # ---------------------------------------------------------------------------------------
 # Target characteristic Values for calibrating Random Variables
 
-# Characteristic tensile strength in MPa 
-m_k = 12.088790043382897 # adjusted to eta = 100% for Design Opt 1 TH1 (linear)
+# Characteristic yield strength in MPa 
+f_u = 1534.3097 # adjusted to eta = 100% for Design Opt 1 TH1 (linear)
 
 # Characteristic Loads in kN/m2
 s_k = 1.1  # snow  (in negative z-direction)
@@ -53,25 +55,26 @@ sig_L2 = mu_L2 * cov_L2
 L2_dist = ERADist('gumbel', 'MOM', [mu_L2, sig_L2])
 
 
-# Structural Response Model Uncertainty $\Theta_{S}$: Annahme!
+# Structural Response Model Uncertainty $\Theta_{S}$: axial force in frames (JCSS Part 3, Table 3.9.1)
 mu_Theta_S = 1.0
-cov_Theta_S = 0.15
+cov_Theta_S = 0.05
 sig_Theta_S = mu_Theta_S * cov_Theta_S
 Theta_S_dist = ERADist('lognormal', 'MOM', [mu_Theta_S, sig_Theta_S])
 
 
-# Resistance Model Uncertainty $\Theta_{M}$ Annahme !
+# Resistance Model Uncertainty $\Theta_{M}$  for Steel (Köhler et al. Calibration of ...)
 mu_Theta_M = 1.0
-cov_Theta_M = 0.15
+cov_Theta_M = 0.05
 sig_Theta_M = mu_Theta_M * cov_Theta_M
 Theta_M_dist = ERADist('lognormal', 'MOM', [mu_Theta_M, sig_Theta_M])
 
 
-# membrane tensile strength in MPa from paper with Martin -> i don't know where how it is derived!!
+# Material strength: steel yielding strength $M$ in MPa (JRC Report)
 mu_M = 1.0
-cov_M = 0.1
+cov_M = 0.05
 sig_M = mu_M * cov_M
-M_dist = ERADist('lognormal', 'MOM', [mu_M, sig_M]) 
+M_dist = ERADist('lognormal', 'MOM', [mu_M, sig_M])
+
 
 # ---------------------------------------------------------------------------------------
 # Shifting / Scaling Random Variables 
@@ -120,29 +123,29 @@ print(f"""Old COV: {L2_dist.std()/L2_dist.mean()}; New COV: {L2_shifted_dist.std
 # Steel 
 print(f"\n")
 print("================================")
-print("Transformation of membrane tensile strength")
+print("Transformation of steel yielding strength")
 print("================================")
 
 percentile_M = M_dist.icdf(.05)
 
-tensile_shift = m_k / percentile_M # ratio of target to current percentile, by which mean and std get multiplied
+steel_shift = f_u / percentile_M # ratio of target to current percentile, by which mean and std get multiplied
 
-mu_M_shifted = mu_M * tensile_shift
-sig_M_shifted = sig_M * tensile_shift
+mu_M_shifted = mu_M * steel_shift
+sig_M_shifted = sig_M * steel_shift
 M_shifted_dist = ERADist('lognormal','MOM',[mu_M_shifted, sig_M_shifted])
 
-print(f"""Membrane tensile strength strength gets shifted by {tensile_shift}""")
+print(f"""Steel yielding strength gets shifted by {steel_shift}""")
 print(f"""Old mean: {mu_M}; New mean: {mu_M_shifted}""")
 print(f"""Old std: {sig_M}; New std: {sig_M_shifted}""")
 print(f"""Old 5th percentile: {M_dist.icdf(.05)}; New 5th percentile: {M_shifted_dist.icdf(.05)}""")
 print(f"""Old COV: {M_dist.std()/M_dist.mean()}; New COV: {M_shifted_dist.std()/M_shifted_dist.mean()}""")
 
-
 # ---------------------------------------------------------------------------------------
 # Partial Safety Factors
-gamma_F1 = 1.5  # snow
-gamma_F2 = 1.5  # wind
-gamma_M = 1.4   # resistance side (from Technical Specification, CEN TC250 WG5)
+gamma_F1 = 1.5
+gamma_F2 = 1.5
+psi_0 = 1.0 # 0.6  # Windload
+gamma_M = 1.5 # Material Side (DIN EN 1993-1-11)
 
 # ---------------------------------------------------------------------------------------
 # Characteristic values derived from Random Variables for further calculation
@@ -164,7 +167,7 @@ print("================================")
 print("Design Values")
 print("================================")
 l_1d = l_1k * gamma_F1
-l_2d = l_2k * gamma_F2
+l_2d = l_2k * gamma_F2 * psi_0
 m_d = m_k / gamma_M
 print(f"l_1d = {l_1d:.4f} kN/m^2")
 print(f"l_2d = {l_2d:.4f} kN/m^2")
@@ -172,9 +175,10 @@ print(f"m_d = {m_d:.4f} MPa")
 
 # ---------------------------------------------------------------------------------------
 # Measures of Nonlinearity
+
 y0 = y0(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hyperplane_linear)
-k1 = kappa_1(l_1k=l_1k, l_1d=l_1d,t_S=t_S_hyperplane_linear)
-k2 = kappa_2(l_2k=l_2k, l_2d=l_2d,t_S=t_S_hyperplane_linear)
+k1 = kappa_1(l_1k=l_1k, l_1d=l_1d, t_S=t_S_hyperplane_linear)
+k2 = kappa_2(l_2k=l_2k, l_2d=l_2d, t_S=t_S_hyperplane_linear)
 k12 = kappa_12(l_1k=l_1k, l_1d=l_1d, l_2k=l_2k, l_2d=l_2d, t_S=t_S_hyperplane_linear)
 r1 = r1(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hyperplane_linear)
 r2 = r2(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hyperplane_linear)
@@ -184,10 +188,11 @@ print("================================")
 print("Measures of nonlinearity")
 print("================================")
 
-print(f"y0: {y0}")
-print(f"kappa1: {k1}")
-print(f"kappa2: {k2}")
-print(f"kappa12: {k12}")
+print(f"\n")
+print(f"y0 = {y0}")
+print(f"kappa1 = {k1}")
+print(f"kappa2 = {k2}")
+print(f"kappa12 = {k12}")
 print(f"r1 = {r1}")
 print(f"r2 = {r2}")
 
@@ -250,64 +255,141 @@ print(f"eta = {e_d_2_primed/m_d}")
 print(f"p_opt2' = {p_opt2_primed}")
 
 # ---------------------------------------------------------------------------------------
-# Subset Simulation
-# not feasible, simulation takes too long
+# Limit State Functions g(X) for option 1, 2 and 2' with SuS, with model uncertainties
+
+def g_opt1_SuS(x):
+    
+    resistance_side = p_opt1 * x[:,0] * x[:,1]
+    action_side = x[:,6] * t_S_lin_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
+    
+    return resistance_side - action_side
+
+def g_opt2_SuS(x):
+    
+    resistance_side = p_opt2 * x[:,0] * x[:,1]
+    action_side = x[:,6] * t_S_lin_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
+    
+    return resistance_side - action_side
+
+def g_opt2_primed_SuS(x):
+    
+    resistance_side = p_opt2_primed * x[:,0] * x[:,1]
+    action_side = x[:,6] * t_S_lin_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
+    
+    return resistance_side - action_side
 
 # ---------------------------------------------------------------------------------------
-# Limit State Functions g(X) for option 1 and 2 with FORM, with model uncertainties
+# Subset Simulation with model uncertainties
 
-def g_opt1_FORM(x):
-    
-    resistance_side = p_opt1 * x[0] * x[1]
-    action_side = x[6] * t_S_lin_vectorized((x[2] * x[3]), (x[4] * x[5]))
-    
-    return resistance_side - action_side
+# np.random.seed(42)
 
-# def g_opt1_FORM(x):
-#     x = np.asarray(x, dtype=float)
-#     resistance_side = p_opt1 * x[0] * x[1]
+# samples_return = 1
+# N  = 10000        # Total number of samples for each level
+# p0 = 0.1         # Probability of each subset, chosen adaptively
 
-#     F_BOUND = 10.0  # hard upper limit that the cablenet model still can solve to prevent crashing
-#     F_Z = np.clip(np.nan_to_num(x[3], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
-#     F_Y = np.clip(np.nan_to_num(x[5], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+# # Option 1
+# print('\n\nSUBSET SIMULATION OPTION 1: ')
+# [Pf_1_SuS, delta_SuS, b, Pf_1, b_sus, pf_sus, samplesU, samplesX_1, fs_iid] = SuS(N, p0, g_opt1_SuS, nataf_with_uncertainties, samples_return)
 
-#     action_side = x[6] * t_S_lin_vectorized(x[2] * F_Z, x[4] * F_Y)
+# # Option 2
+# print('\n\nSUBSET SIMULATION OPTION 2: ')
+# [Pf_2_SuS, delta_SuS, b, Pf_2, b_sus, pf_sus, samplesU, samplesX_2, fs_iid] = SuS(N, p0, g_opt2_SuS, nataf_with_uncertainties, samples_return)
 
-#     g_val = resistance_side - action_side
-#     return np.nan_to_num(g_val, nan=-1e6, posinf=1e6, neginf=-1e6)
+# # Option 2' 
+# print('\n\nSUBSET SIMULATION OPTION 2 primed: ')
+# [Pf_2_primed_SuS, delta_SuS, b, Pf_2_primed, b_sus, pf_sus, samplesU, samplesX_2_primed, fs_iid] = SuS(N, p0, g_opt2_primed_SuS, nataf_with_uncertainties, samples_return)
 
-def g_opt2_FORM(x):
-    
-    resistance_side = p_opt2 * x[0] * x[1]
-    action_side = x[6] * t_S_lin_vectorized((x[2] * x[3]), (x[4] * x[5]))
-    
-    return resistance_side - action_side
 
-def g_opt2_primed_FORM(x):
-    
-    resistance_side = p_opt2_primed * x[0] * x[1]
-    action_side = x[6] * t_S_lin_vectorized((x[2] * x[3]), (x[4] * x[5]))
-    
-    return resistance_side - action_side
 
+
+# print("\n\n=== SUMMARY SUBSET SIMULATION ===")
+
+# print("\nDesign option (1)")
+# print(f"Pr(F) = {Pf_1_SuS}")
+# X = ERADist('standardnormal','MOM',[])
+# beta_1_SuS = - X.icdf(Pf_1_SuS)
+# print(f"beta = {beta_1_SuS}")
+
+# print("\nDesign option (2)")
+# print(f"Pr(F) = {Pf_2_SuS}")
+# X = ERADist('standardnormal','MOM',[])
+# beta_2_SuS = - X.icdf(Pf_2_SuS)
+# print(f"beta = {beta_2_SuS}")
+
+# print("\nDesign option (2')")
+# print(f"Pr(F) = {Pf_2_primed_SuS}")
+# X = ERADist('standardnormal','MOM',[])
+# beta_2_primed_SuS = - X.icdf(Pf_2_primed_SuS)
+# print(f"beta = {beta_2_primed_SuS}")
 
 # ---------------------------------------------------------------------------------------
-# FORM via fmincon, with model uncertainties
+# Limit State Functions g(X) for option 1, 2 and 2' with SuS, without model uncertainties
 
-# print("\n=== FORM (fmincon) - Design option (1) ===")
-# [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
-#     g=g_opt1_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-6)
+def g_opt1_SuS(x):
+    
+    resistance_side = p_opt1 * x[:,0]
+    action_side = t_S_lin_vectorized((x[:,1]), (x[:,2]))
+    
+    return resistance_side - action_side
+
+def g_opt2_SuS(x):
+    
+    resistance_side = p_opt2 * x[:,0]
+    action_side = t_S_lin_vectorized((x[:,1]), (x[:,2]))
+    
+    return resistance_side - action_side
+
+def g_opt2_primed_SuS(x):
+    
+    resistance_side = p_opt2_primed * x[:,0]
+    action_side = t_S_lin_vectorized((x[:,1]), (x[:,2]))
+    
+    return resistance_side - action_side
+
+# ---------------------------------------------------------------------------------------
+# Subset Simulation without model uncertainties
+
+# np.random.seed(42)
+
+# samples_return = 1
+# N  = 10000        # Total number of samples for each level
+# p0 = 0.1         # Probability of each subset, chosen adaptively
+
+# # Option 1
+# print('\n\nSUBSET SIMULATION OPTION 1: ')
+# [Pf_1_SuS, delta_SuS, b, Pf_1, b_sus, pf_sus, samplesU, samplesX_1, fs_iid] = SuS(N, p0, g_opt1_SuS, nataf_without_uncertainties, samples_return)
+
+# # Option 2
+# print('\n\nSUBSET SIMULATION OPTION 2: ')
+# [Pf_2_SuS, delta_SuS, b, Pf_2, b_sus, pf_sus, samplesU, samplesX_2, fs_iid] = SuS(N, p0, g_opt2_SuS, nataf_without_uncertainties, samples_return)
+
+# # Option 2' 
+# print('\n\nSUBSET SIMULATION OPTION 2 primed: ')
+# [Pf_2_primed_SuS, delta_SuS, b, Pf_2_primed, b_sus, pf_sus, samplesU, samplesX_2_primed, fs_iid] = SuS(N, p0, g_opt2_primed_SuS, nataf_without_uncertainties, samples_return)
 
 
-# # FORM via fmincon  
-# print("\n=== FORM (fmincon) - Design option (2) ===")
-# [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
-#     g=g_opt2_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-6)
 
-# # FORM via fmincon  
-# print("\n=== FORM (fmincon) - Design option (2') ===")
-# [u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
-#     g=g_opt2_primed_FORM, dg=[] , distr=nataf_with_uncertainties, u0=1, maxit=60, tol=1e-6)
+
+# print("\n\n=== SUMMARY SUBSET SIMULATION ===")
+
+# print("\nDesign option (1)")
+# print(f"Pr(F) = {Pf_1_SuS}")
+# X = ERADist('standardnormal','MOM',[])
+# beta_1_SuS = - X.icdf(Pf_1_SuS)
+# print(f"beta = {beta_1_SuS}")
+
+# print("\nDesign option (2)")
+# print(f"Pr(F) = {Pf_2_SuS}")
+# X = ERADist('standardnormal','MOM',[])
+# beta_2_SuS = - X.icdf(Pf_2_SuS)
+# print(f"beta = {beta_2_SuS}")
+
+# print("\nDesign option (2')")
+# print(f"Pr(F) = {Pf_2_primed_SuS}")
+# X = ERADist('standardnormal','MOM',[])
+# beta_2_primed_SuS = - X.icdf(Pf_2_primed_SuS)
+# print(f"beta = {beta_2_primed_SuS}")
+
 
 # print("\n\n=== SUMMARY ===")
 # print("\nDesign option (1)")
@@ -315,23 +397,18 @@ def g_opt2_primed_FORM(x):
 # print(f"beta_1 = {beta_1}") 
 # print(f"x_star_1 = {x_star_1}")
 # print(f"(alpha_1)^2 = {(u_star_1/beta_1)**2}")
-# print(f"g(X*) = {g_opt1_FORM(x_star_1)}")
 
 # print("\n\nDesign option (2)")
 # print(f"Pf_2 = {Pf_2}")
 # print(f"beta_2 = {beta_2}") 
 # print(f"x_star_2 = {x_star_2}")
 # print(f"(alpha_2)^2 = {(u_star_2/beta_2)**2}")
-# print(f"g(X*) = {g_opt2_FORM(x_star_2)}")
 
 # print("\n\nDesign option (2')")
 # print(f"Pf_2' = {Pf_2_primed}")
 # print(f"beta_2' = {beta_2_primed}") 
 # print(f"x_star_2' = {x_star_2_primed}")
 # print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
-# print(f"g(X*) = {g_opt2_primed_FORM(x_star_2_primed)}")
-
-
 
 # ---------------------------------------------------------------------------------------
 # Limit State Functions g(X) for option 1, 2 and 2' with FORM, without model uncertainties
@@ -360,36 +437,36 @@ def g_opt2_primed_FORM(x):
 # ---------------------------------------------------------------------------------------
 # FORM via fmincon, without model uncertainties
 
-print("\n=== FORM (fmincon) - Design option (1) ===")
-[u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
-    g=g_opt1_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
+# print("\n=== FORM (fmincon) - Design option (1) ===")
+# [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
+#     g=g_opt1_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
 
-# FORM via fmincon  
-print("\n=== FORM (fmincon) - Design option (2) ===")
-[u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
-    g=g_opt2_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
+# # FORM via fmincon  
+# print("\n=== FORM (fmincon) - Design option (2) ===")
+# [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
+#     g=g_opt2_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
 
-# FORM via fmincon  
-print("\n=== FORM (fmincon) - Design option (2') ===")
-[u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
-    g=g_opt2_primed_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
+# # FORM via fmincon  
+# print("\n=== FORM (fmincon) - Design option (2') ===")
+# [u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
+#     g=g_opt2_primed_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
 
 
-print("\n\n=== SUMMARY ===")
-print("\nDesign option (1)")
-print(f"Pf_1 = {Pf_1}")
-print(f"beta_1 = {beta_1}") 
-print(f"x_star_1 = {x_star_1}")
-print(f"(alpha_1)^2 = {(u_star_1/beta_1)**2}")
+# print("\n\n=== SUMMARY ===")
+# print("\nDesign option (1)")
+# print(f"Pf_1 = {Pf_1}")
+# print(f"beta_1 = {beta_1}") 
+# print(f"x_star_1 = {x_star_1}")
+# print(f"(alpha_1)^2 = {(u_star_1/beta_1)**2}")
 
-print("\n\nDesign option (2)")
-print(f"Pf_2 = {Pf_2}")
-print(f"beta_2 = {beta_2}") 
-print(f"x_star_2 = {x_star_2}")
-print(f"(alpha_2)^2 = {(u_star_2/beta_2)**2}")
+# print("\n\nDesign option (2)")
+# print(f"Pf_2 = {Pf_2}")
+# print(f"beta_2 = {beta_2}") 
+# print(f"x_star_2 = {x_star_2}")
+# print(f"(alpha_2)^2 = {(u_star_2/beta_2)**2}")
 
-print("\n\nDesign option (2')")
-print(f"Pf_2' = {Pf_2_primed}")
-print(f"beta_2' = {beta_2_primed}") 
-print(f"x_star_2' = {x_star_2_primed}")
-print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
+# print("\n\nDesign option (2')")
+# print(f"Pf_2' = {Pf_2_primed}")
+# print(f"beta_2' = {beta_2_primed}") 
+# print(f"x_star_2' = {x_star_2_primed}")
+# print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")

@@ -1,4 +1,4 @@
-from syst_8_model_functions import t_S_cablenet_nonlinear, t_S_hyperplane_linear
+from syst_2_model_functions import t_S_cablenet_nonlinear, t_S_hyperplane_linear
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -98,8 +98,8 @@ ax2.set_box_aspect(1)   # force a square (quadratic) contour panel, regardless o
 ax2.xaxis.set_major_formatter(ONE_DECIMAL)
 ax2.yaxis.set_major_formatter(ONE_DECIMAL)
 fig1.subplots_adjust(left=0.07, right=0.90, top=0.90, bottom=0.10)
-fig1.savefig('./syst_8_tripod_cables/syst_8_plots/fig1_surface_contour.png', dpi=220, facecolor='white')
-fig1.savefig('./syst_8_tripod_cables/syst_8_plots/fig1_surface_contour.svg', facecolor='white')
+fig1.savefig('./syst_2_tripod_cables/syst_2_plots/fig1_surface_contour.png', dpi=220, facecolor='white')
+fig1.savefig('./syst_2_tripod_cables/syst_2_plots/fig1_surface_contour.svg', facecolor='white')
 
 
 
@@ -156,8 +156,8 @@ ax_l1.yaxis.set_major_formatter(ONE_DECIMAL)
 ax_l1.tick_params(labelbottom=False, labelleft=False, bottom=False, left=False)
 # ax_l1.tick_params(labelbottom=True, labelleft=True)
 
-fig2a.savefig('./syst_8_tripod_cables/syst_8_plots/fig2a_section_l1.png', dpi=220, bbox_inches='tight', facecolor='white')
-fig2a.savefig('./syst_8_tripod_cables/syst_8_plots/fig2a_section_l1.svg', bbox_inches='tight', facecolor='white')
+fig2a.savefig('./syst_2_tripod_cables/syst_2_plots/fig2a_section_l1.png', dpi=220, bbox_inches='tight', facecolor='white')
+fig2a.savefig('./syst_2_tripod_cables/syst_2_plots/fig2a_section_l1.svg', bbox_inches='tight', facecolor='white')
 
 # --- FIGURE 2b: M vs l_2, section at l_1 = 0.0 ---
 fig2b, ax_l2 = plt.subplots(figsize=(8, 6))
@@ -172,8 +172,8 @@ ax_l2.yaxis.set_major_formatter(ONE_DECIMAL)
 ax_l2.tick_params(labelbottom=False, labelleft=False, bottom=False, left=False)
 # ax_l2.tick_params(labelbottom=True, labelleft=True)
 
-fig2b.savefig('./syst_8_tripod_cables/syst_8_plots/fig2b_section_l2.png', dpi=220, bbox_inches='tight', facecolor='white')
-fig2b.savefig('./syst_8_tripod_cables/syst_8_plots/fig2b_section_l2.svg', bbox_inches='tight', facecolor='white')
+fig2b.savefig('./syst_2_tripod_cables/syst_2_plots/fig2b_section_l2.png', dpi=220, bbox_inches='tight', facecolor='white')
+fig2b.savefig('./syst_2_tripod_cables/syst_2_plots/fig2b_section_l2.svg', bbox_inches='tight', facecolor='white')
 
 
 # Compute single values for description in the images

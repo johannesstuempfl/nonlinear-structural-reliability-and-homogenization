@@ -1,6 +1,6 @@
 import numpy as np
-from syst_7_measures_of_nonlinearity import y0, kappa_1, kappa_2, kappa_12, r1, r2
-from syst_7_model_functions import t_S_hypar_nonlinear
+from syst_3_measures_of_nonlinearity import y0, kappa_1, kappa_2, kappa_12, r1, r2
+from syst_3_model_functions import t_S_hypar_nonlinear
 
 from ERA_Distribution_Classes_Python.Classes.ERADist import ERADist
 from ERA_Distribution_Classes_Python.Classes.ERANataf import ERANataf

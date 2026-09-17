@@ -1,6 +1,6 @@
 import numpy as np
-from syst_8_measures_of_nonlinearity import y0, kappa_1, kappa_2, kappa_12, r1, r2
-from syst_8_model_functions import t_S_hyperplane_linear, t_S_cablenet_nonlinear
+from syst_2_measures_of_nonlinearity import y0, kappa_1, kappa_2, kappa_12, r1, r2
+from syst_2_model_functions import t_S_cablenet_nonlinear
 
 from ERA_Distribution_Classes_Python.Classes.ERADist import ERADist
 from ERA_Distribution_Classes_Python.Classes.ERANataf import ERANataf
@@ -9,15 +9,13 @@ from ERA_Distribution_Classes_Python.Classes.FORM_fmincon import FORM_fmincon
 from ERA_Distribution_Classes_Python.Classes.SuS import SuS
 
 # Vectorized Version of the Structural response function (Better for array handling later)
-t_S_lin_vectorized = np.vectorize(t_S_hyperplane_linear, otypes=[float])
+t_S_nonl_vectorized = np.vectorize(t_S_cablenet_nonlinear, otypes=[float])
 
 
 # ---------------------------------------------------------------------------------------
 # Target characteristic Values for calibrating Random Variables
 
 # Characteristic yield strength in MPa 
-#f_u = 1726.2770986111154 # deprecated! adjusted to eta = 100% for Design Opt 2
-# f_u = 2617.8901319049537 # deprecated! adjusted to eta = 100% for Design Opt 1 TH1 (linear)
 f_u = 1534.3097 # adjusted to eta = 100% for Design Opt 1 TH1 (linear)
 
 # Characteristic Loads in kN/m2
@@ -178,12 +176,12 @@ print(f"m_d = {m_d:.4f} MPa")
 # ---------------------------------------------------------------------------------------
 # Measures of Nonlinearity
 
-y0 = y0(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hyperplane_linear)
-k1 = kappa_1(l_1k=l_1k, l_1d=l_1d, t_S=t_S_hyperplane_linear)
-k2 = kappa_2(l_2k=l_2k, l_2d=l_2d, t_S=t_S_hyperplane_linear)
-k12 = kappa_12(l_1k=l_1k, l_1d=l_1d, l_2k=l_2k, l_2d=l_2d, t_S=t_S_hyperplane_linear)
-r1 = r1(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hyperplane_linear)
-r2 = r2(l_1k=l_1k, l_2k=l_2k, t_S=t_S_hyperplane_linear)
+y0 = y0(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_nonlinear)
+k1 = kappa_1(l_1k=l_1k, l_1d=l_1d, t_S=t_S_cablenet_nonlinear)
+k2 = kappa_2(l_2k=l_2k, l_2d=l_2d, t_S=t_S_cablenet_nonlinear)
+k12 = kappa_12(l_1k=l_1k, l_1d=l_1d, l_2k=l_2k, l_2d=l_2d, t_S=t_S_cablenet_nonlinear)
+r1 = r1(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_nonlinear)
+r2 = r2(l_1k=l_1k, l_2k=l_2k, t_S=t_S_cablenet_nonlinear)
 
 print(f"\n")
 print("================================")
@@ -219,21 +217,21 @@ nataf_without_uncertainties = ERANataf(M=marginal_dist_without_uncertainties, Co
 # ---------------------------------------------------------------------------------------
 # Design parameters p for option 1 and 2 
 # Design Opt 1
-e_d_1 = t_S_hyperplane_linear(l_1d, l_2d)
+e_d_opt1 = t_S_cablenet_nonlinear(F_Z=l_1d, F_Y=l_2d) # kN/m
 
 # Design Opt 2
-argument_1 = gamma_F1 * t_S_hyperplane_linear(l_1k,  (gamma_F2 / gamma_F1) * l_2k)
-argument_2 = gamma_F2 * t_S_hyperplane_linear((gamma_F1 / gamma_F2) * l_1k, l_2k)
-e_d_2 = max(argument_1, argument_2)
+argument_1 = gamma_F1 * t_S_cablenet_nonlinear(F_Z=l_1k, F_Y=(gamma_F2/gamma_F1) * l_2k)
+argument_2 = gamma_F2 * t_S_cablenet_nonlinear(F_Z=(gamma_F1/gamma_F2) * l_1k, F_Y=l_2k)
+e_d_opt2 = max(argument_1, argument_2) # kN/m
 
 # Design Opt 2'
-argument_1_primed = gamma_F1 * (t_S_hyperplane_linear(l_1k,  (gamma_F2 / gamma_F1) * l_2k) - t_S_hyperplane_linear(0,0)) + t_S_hyperplane_linear(0,0)
-argument_2_primed = gamma_F2 * (t_S_hyperplane_linear((gamma_F1 / gamma_F2) * l_1k, l_2k) - t_S_hyperplane_linear(0,0)) + t_S_hyperplane_linear(0,0)
+argument_1_primed = gamma_F1 * (t_S_cablenet_nonlinear(l_1k,  (gamma_F2 / gamma_F1) * l_2k) - t_S_cablenet_nonlinear(0,0)) + t_S_cablenet_nonlinear(0,0)
+argument_2_primed = gamma_F2 * (t_S_cablenet_nonlinear((gamma_F1 / gamma_F2) * l_1k, l_2k) - t_S_cablenet_nonlinear(0,0)) + t_S_cablenet_nonlinear(0,0)
 e_d_2_primed = max(argument_1_primed, argument_2_primed)
 
 
-p_opt1 = gamma_M * e_d_1 / m_k
-p_opt2 = gamma_M * e_d_2 / m_k
+p_opt1 = gamma_M * e_d_opt1 / m_k
+p_opt2 = gamma_M * e_d_opt2 / m_k
 p_opt2_primed = gamma_M * e_d_2_primed / m_k
 
 print(f"\n")
@@ -242,14 +240,14 @@ print("Design Parameters p")
 print("================================")
 print(f"\n")
 print("Design Option 1:")
-print(f"e_d = {e_d_1} MPa")
-print(f"eta = {e_d_1/m_d}")
-print(f"p_opt1 = {p_opt1}")
+print(f"e_d = {e_d_opt1} MPa")
+print(f"eta = {e_d_opt1/m_d}")
+print(f"p_opt1 = {p_opt1:.5f}")
 print(f"\n")
 print("Design Option 2:")
-print(f"e_d = {e_d_2} MPa")
-print(f"eta = {e_d_2/m_d}")
-print(f"p_opt2 = {p_opt2}")
+print(f"e_d = {e_d_opt2} MPa")
+print(f"eta = {e_d_opt2/m_d}")
+print(f"p_opt2 = {p_opt2:.5f}")
 print(f"\n")
 print("Design Option 2':")
 print(f"e_d = {e_d_2_primed} MPa")
@@ -257,37 +255,37 @@ print(f"eta = {e_d_2_primed/m_d}")
 print(f"p_opt2' = {p_opt2_primed}")
 
 # ---------------------------------------------------------------------------------------
-# Limit State Functions g(X) for option 1, 2 and 2' with SuS, with model uncertainties
+# Limit State Functions g(X) for option 1 and 2 with SuS, with model uncertainties
 
 def g_opt1_SuS(x):
     
     resistance_side = p_opt1 * x[:,0] * x[:,1]
-    action_side = x[:,6] * t_S_lin_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
+    action_side = x[:,6] * t_S_nonl_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
     
     return resistance_side - action_side
 
 def g_opt2_SuS(x):
     
     resistance_side = p_opt2 * x[:,0] * x[:,1]
-    action_side = x[:,6] * t_S_lin_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
+    action_side = x[:,6] * t_S_nonl_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
     
     return resistance_side - action_side
 
 def g_opt2_primed_SuS(x):
     
     resistance_side = p_opt2_primed * x[:,0] * x[:,1]
-    action_side = x[:,6] * t_S_lin_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
+    action_side = x[:,6] * t_S_nonl_vectorized((x[:,2] * x[:,3]), (x[:,4] * x[:,5]))
     
     return resistance_side - action_side
 
 # ---------------------------------------------------------------------------------------
 # Subset Simulation with model uncertainties
 
-# np.random.seed(42)
+np.random.seed(42)
 
-# samples_return = 1
-# N  = 10000        # Total number of samples for each level
-# p0 = 0.1         # Probability of each subset, chosen adaptively
+samples_return = 1
+N  = 10000        # Total number of samples for each level
+p0 = 0.1         # Probability of each subset, chosen adaptively
 
 # # Option 1
 # print('\n\nSUBSET SIMULATION OPTION 1: ')
@@ -325,37 +323,43 @@ def g_opt2_primed_SuS(x):
 # print(f"beta = {beta_2_primed_SuS}")
 
 # ---------------------------------------------------------------------------------------
-# Limit State Functions g(X) for option 1, 2 and 2' with SuS, without model uncertainties
+# Limit State Functions g(X) for option 1 and 2 with SuS, without model uncertainties
 
 def g_opt1_SuS(x):
-    
     resistance_side = p_opt1 * x[:,0]
-    action_side = t_S_lin_vectorized((x[:,1]), (x[:,2]))
-    
-    return resistance_side - action_side
+    F_BOUND = 50.0
+    F_Z = np.clip(np.nan_to_num(x[:,1], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+    F_Y = np.clip(np.nan_to_num(x[:,2], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+    action_side = t_S_nonl_vectorized(F_Z, F_Y)
+    g_val = resistance_side - action_side
+    return np.nan_to_num(g_val, nan=-1e6, posinf=1e6, neginf=-1e6)
 
 def g_opt2_SuS(x):
-    
     resistance_side = p_opt2 * x[:,0]
-    action_side = t_S_lin_vectorized((x[:,1]), (x[:,2]))
-    
-    return resistance_side - action_side
+    F_BOUND = 50.0  
+    F_Z = np.clip(np.nan_to_num(x[:,1], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+    F_Y = np.clip(np.nan_to_num(x[:,2], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+    action_side = t_S_nonl_vectorized(F_Z, F_Y)
+    g_val = resistance_side - action_side
+    return np.nan_to_num(g_val, nan=-1e6, posinf=1e6, neginf=-1e6)
 
 def g_opt2_primed_SuS(x):
-    
     resistance_side = p_opt2_primed * x[:,0]
-    action_side = t_S_lin_vectorized((x[:,1]), (x[:,2]))
-    
-    return resistance_side - action_side
+    F_BOUND = 50.0
+    F_Z = np.clip(np.nan_to_num(x[:,1], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+    F_Y = np.clip(np.nan_to_num(x[:,2], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+    action_side = t_S_nonl_vectorized(F_Z, F_Y)
+    g_val = resistance_side - action_side
+    return np.nan_to_num(g_val, nan=-1e6, posinf=1e6, neginf=-1e6)
 
 # ---------------------------------------------------------------------------------------
 # Subset Simulation without model uncertainties
 
-# np.random.seed(42)
+np.random.seed(42)
 
-# samples_return = 1
-# N  = 10000        # Total number of samples for each level
-# p0 = 0.1         # Probability of each subset, chosen adaptively
+samples_return = 1
+N  = 10000        # Total number of samples for each level
+p0 = 0.1         # Probability of each subset, chosen adaptively
 
 # # Option 1
 # print('\n\nSUBSET SIMULATION OPTION 1: ')
@@ -393,6 +397,50 @@ def g_opt2_primed_SuS(x):
 # print(f"beta = {beta_2_primed_SuS}")
 
 
+
+# ---------------------------------------------------------------------------------------
+# Limit State Functions g(X) for option 1 and 2 with FORM, with model uncertainties
+
+# def g_opt1_FORM(x):
+    
+#     resistance_side = p_opt1 * x[0] * x[1]
+#     action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    
+#     return resistance_side - action_side
+
+# def g_opt2_FORM(x):
+    
+#     resistance_side = p_opt2 * x[0] * x[1]
+#     action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    
+#     return resistance_side - action_side
+
+# def g_opt2_primed_FORM(x):
+    
+#     resistance_side = p_opt2_primed * x[0] * x[1]
+#     action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    
+#     return resistance_side - action_side
+
+
+# ---------------------------------------------------------------------------------------
+# FORM via fmincon, with model uncertainties
+
+# print("\n=== FORM (fmincon) - Design option (1) ===")
+# [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
+#     g=g_opt1_FORM, dg=[] , distr=nataf_with_uncertainties, u0=0, maxit=60, tol=1e-6)
+
+
+# # FORM via fmincon  
+# print("\n=== FORM (fmincon) - Design option (2) ===")
+# [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
+#     g=g_opt2_FORM, dg=[] , distr=nataf_with_uncertainties, u0=0, maxit=60, tol=1e-6)
+
+# # FORM via fmincon  
+# print("\n=== FORM (fmincon) - Design option (2') ===")
+# [u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
+#     g=g_opt2_primed_FORM, dg=[] , distr=nataf_with_uncertainties, u0=0, maxit=60, tol=1e-6)
+
 # print("\n\n=== SUMMARY ===")
 # print("\nDesign option (1)")
 # print(f"Pf_1 = {Pf_1}")
@@ -412,47 +460,68 @@ def g_opt2_primed_SuS(x):
 # print(f"x_star_2' = {x_star_2_primed}")
 # print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
 
+
 # ---------------------------------------------------------------------------------------
-# Limit State Functions g(X) for option 1, 2 and 2' with FORM, without model uncertainties
+# Limit State Functions g(X) for option 1 and 2 with FORM, without model uncertainties
 
 def g_opt1_FORM(x):
-    
+    x = np.asarray(x, dtype=float)
     resistance_side = p_opt1 * x[0]
-    action_side = t_S_lin_vectorized((x[1]), (x[2]))
-    
-    return resistance_side - action_side
+
+    F_BOUND = 5.0  # hard upper limit that the cablenet model still can solve to prevent crashing
+    F_Z = np.clip(np.nan_to_num(x[1], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+    F_Y = np.clip(np.nan_to_num(x[2], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+
+    action_side = t_S_nonl_vectorized(F_Z, F_Y)
+
+    g_val = resistance_side - action_side
+    return np.nan_to_num(g_val, nan=-1e6, posinf=1e6, neginf=-1e6)
 
 def g_opt2_FORM(x):
-    
-    resistance_side = p_opt2 * x[0] 
-    action_side = t_S_lin_vectorized((x[1]), (x[2]))
-    
-    return resistance_side - action_side
+    x = np.asarray(x, dtype=float)
+    resistance_side = p_opt2 * x[0]
+
+    F_BOUND = 5.0  # hard upper limit that the cablenet model still can solve to prevent crashing
+    F_Z = np.clip(np.nan_to_num(x[1], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+    F_Y = np.clip(np.nan_to_num(x[2], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+
+    action_side = t_S_nonl_vectorized(F_Z, F_Y)
+
+    g_val = resistance_side - action_side
+    return np.nan_to_num(g_val, nan=-1e6, posinf=1e6, neginf=-1e6)
+
+
 
 def g_opt2_primed_FORM(x):
-    
-    resistance_side = p_opt2_primed * x[0] 
-    action_side = t_S_lin_vectorized((x[1]), (x[2]))
-    
-    return resistance_side - action_side
+    x = np.asarray(x, dtype=float)
+    resistance_side = p_opt2_primed * x[0]
+
+    F_BOUND = 5.0  # hard upper limit that the cablenet model still can solve to prevent crashing
+    F_Z = np.clip(np.nan_to_num(x[1], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+    F_Y = np.clip(np.nan_to_num(x[2], nan=0.0, posinf=F_BOUND, neginf=0.0), 0.0, F_BOUND)
+
+    action_side = t_S_nonl_vectorized(F_Z, F_Y)
+
+    g_val = resistance_side - action_side
+    return np.nan_to_num(g_val, nan=-1e6, posinf=1e6, neginf=-1e6)
 
 # ---------------------------------------------------------------------------------------
 # FORM via fmincon, without model uncertainties
 
 # print("\n=== FORM (fmincon) - Design option (1) ===")
 # [u_star_1, x_star_1, beta_1, alpha_1, Pf_1]  = FORM_fmincon(
-#     g=g_opt1_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
+#     g=g_opt1_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=100, tol=1e-6)
+
 
 # # FORM via fmincon  
 # print("\n=== FORM (fmincon) - Design option (2) ===")
 # [u_star_2, x_star_2, beta_2, alpha_2, Pf_2]  = FORM_fmincon(
-#     g=g_opt2_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
+#     g=g_opt2_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=150, tol=1e-6)
 
 # # FORM via fmincon  
 # print("\n=== FORM (fmincon) - Design option (2') ===")
 # [u_star_2_primed, x_star_2_primed, beta_2_primed, alpha_2_primed, Pf_2_primed]  = FORM_fmincon(
-#     g=g_opt2_primed_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=60, tol=1e-6)
-
+#     g=g_opt2_primed_FORM, dg=[] , distr=nataf_without_uncertainties, u0=1, maxit=100, tol=1e-6)
 
 # print("\n\n=== SUMMARY ===")
 # print("\nDesign option (1)")
@@ -460,15 +529,163 @@ def g_opt2_primed_FORM(x):
 # print(f"beta_1 = {beta_1}") 
 # print(f"x_star_1 = {x_star_1}")
 # print(f"(alpha_1)^2 = {(u_star_1/beta_1)**2}")
+# print(f"g(X*) = {g_opt1_FORM(x_star_1)}")
 
 # print("\n\nDesign option (2)")
 # print(f"Pf_2 = {Pf_2}")
 # print(f"beta_2 = {beta_2}") 
 # print(f"x_star_2 = {x_star_2}")
 # print(f"(alpha_2)^2 = {(u_star_2/beta_2)**2}")
+# print(f"g(X*) = {g_opt2_FORM(x_star_2)}")
 
 # print("\n\nDesign option (2')")
 # print(f"Pf_2' = {Pf_2_primed}")
 # print(f"beta_2' = {beta_2_primed}") 
 # print(f"x_star_2' = {x_star_2_primed}")
 # print(f"(alpha_2')^2 = {(u_star_2_primed/beta_2_primed)**2}")
+# print(f"g(X*) = {g_opt2_primed_FORM(x_star_2_primed)}")
+
+
+# ---------------------------------------------------------------------------------------
+# Safety Homogenization towards TH1 Design Opt 1
+from scipy.optimize import brentq
+
+# Target Reliability from TH1
+beta_TRG = 5.358605291098258
+
+
+# # Objective Function TH3 Opt 1
+# def f(gamma_new):
+#     def g_opt_1(x):
+        
+#         resistance_side = p_opt1 * gamma_new * x[0] * x[1]
+#         action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+
+#         return resistance_side - action_side
+
+#     [u_star, x_star, beta, alpha, Pf] = FORM_fmincon(g=g_opt_1, dg=[], distr=nataf)
+#     return beta - beta_TRG
+
+# # # this is for narrowing down the lower and upper bound of where brentq should search in the input space
+# # for g in [0.90, 0.91, 0.92, 0.93]:
+# #     print(g, f(g))
+
+
+# # Finding the Root (Optimization Problem)
+# gamma_new_1 = brentq(f, 0.90, 0.91)
+
+
+# # Verification of gamma_new_1
+# def g_opt1_FORM_verification(x):
+    
+#     resistance_side = p_opt1 * gamma_new_1 * x[0] * x[1]
+#     action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    
+#     return resistance_side - action_side
+
+# # Perform FORM with fmincom
+# [u_star_1_ver, x_star_1_ver, beta_1_ver, alpha_1_ver, Pf_1_ver] = FORM_fmincon(g=g_opt1_FORM_verification, dg=[], distr=nataf, u0=0)
+
+
+
+# # Objective Function TH3 Opt 2
+# def f(gamma_new):
+#     def g_opt_2(x):
+        
+#         resistance_side = p_opt2 * gamma_new * x[0] * x[1]
+#         action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+
+#         return resistance_side - action_side
+
+#     [u_star, x_star, beta, alpha, Pf] = FORM_fmincon(g=g_opt_2, dg=[], distr=nataf)
+#     return beta - beta_TRG
+
+# # # this is for narrowing down the lower and upper bound of where brentq should search in the input space
+# # for g in [0.76, 0.77, 0.78]:
+# #     print(g, f(g))
+
+
+# # Finding the Root (Optimization Problem)
+# gamma_new_2 = brentq(f, 0.76, 0.77)
+
+
+# # Verification of gamma_new_2
+# def g_opt2_FORM_verification(x):
+    
+#     resistance_side = p_opt2 * gamma_new_2 * x[0] * x[1]
+#     action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    
+#     return resistance_side - action_side
+
+
+# # Perform FORM with fmincom
+# [u_star_2_ver, x_star_2_ver, beta_2_ver, alpha_2_ver, Pf_2_ver] = FORM_fmincon(g=g_opt2_FORM_verification, dg=[], distr=nataf, u0=0)
+
+
+
+# # Objective Function TH3 Opt 2'
+# def f(gamma_new):
+#     def g_opt_2_primed(x):
+        
+#         resistance_side = p_opt2_primed * gamma_new * x[0] * x[1]
+#         action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+
+#         return resistance_side - action_side
+
+#     [u_star, x_star, beta, alpha, Pf] = FORM_fmincon(g=g_opt_2_primed, dg=[], distr=nataf)
+#     return beta - beta_TRG
+
+# # # this is for narrowing down the lower and upper bound of where brentq should search in the input space
+# # for g in [0.82, 0.83, 0.84]:
+# #     print(g, f(g))
+
+
+# # Finding the Root (Optimization Problem)
+# gamma_new_2_primed = brentq(f, 0.83, 0.84)
+
+
+# # Verification of gamma_new_2'
+# def g_opt2_primed_FORM_verification(x):
+    
+#     resistance_side = p_opt2_primed * gamma_new_2_primed * x[0] * x[1]
+#     action_side = x[6] * t_S_nonl_vectorized((x[2] * x[3]), (x[4] * x[5]))
+    
+#     return resistance_side - action_side
+
+
+# # Perform FORM with fmincom
+# [u_star_2_primed_ver, x_star_2_primed_ver, beta_2_primed_ver, alpha_2_primed_ver, Pf_2_primed_ver] = FORM_fmincon(
+#     g=g_opt2_primed_FORM_verification, dg=[], distr=nataf, u0=0)
+
+
+
+
+# ---------------------------------------------------------------------------------------
+# Summary of Safety Homogenization
+
+# print("\n\n=== SUMMARY SAFETY HOMOGENIZATION ===")
+# print(f"\n")
+# print("================================")
+# print("Safety Homogenization towards TH1")
+# print("================================")
+
+# print(f"\n")
+# print(f"TH3 Design Option 1")
+# print(f"gamma_new = {gamma_new_1}")
+# print(f"Target Reliability Index: {beta_TRG}")
+# print(f"Optimized Reliability Index: {beta_1_ver}")
+# print(f"Difference: {beta_1_ver - beta_TRG}")
+
+# print(f"\n")
+# print(f"TH3 Design Option 2")
+# print(f"gamma_new = {gamma_new_2}")
+# print(f"Target Reliability Index: {beta_TRG}")
+# print(f"Optimized Reliability Index: {beta_2_ver}")
+# print(f"Difference: {beta_2_ver - beta_TRG}")
+
+# print(f"\n")
+# print(f"TH3 Design Option 2'")
+# print(f"gamma_new = {gamma_new_2_primed}")
+# print(f"Target Reliability Index: {beta_TRG}")
+# print(f"Optimized Reliability Index: {beta_2_primed_ver}")
+# print(f"Difference: {beta_2_primed_ver - beta_TRG}")
